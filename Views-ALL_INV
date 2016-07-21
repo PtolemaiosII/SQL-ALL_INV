@@ -1,0 +1,31 @@
+SELECT
+    part.id,
+    COALESCE((SELECT SUM(qtyonhand.qty)
+                FROM qtyonhand
+               WHERE qtyonhand.partid = part.id), 0) AS qty,
+    COALESCE((SELECT SUM(qtynotavailable.qty)
+                FROM qtynotavailable
+               WHERE qtynotavailable.partid = part.id), 0) AS Unavailable,
+    COALESCE((SELECT SUM(qtydropship.qty)
+                FROM qtydropship
+               WHERE qtydropship.partid = part.id), 0) AS DropShip,
+    COALESCE((SELECT SUM(qtycommitted.qty)
+                FROM qtycommitted
+               WHERE qtycommitted.partid = part.id), 0) AS qtycommitted,
+    COALESCE((SELECT SUM(QtyAllocated.qty)
+                FROM QtyAllocated
+               WHERE QtyAllocated.partID = Part.id), 0) AS allocated,
+    COALESCE((SELECT SUM(qtyonorder.qty)
+                FROM qtyonorder
+               WHERE qtyonorder.partid = part.id), 0) AS onorder,
+    COALESCE((SELECT SUM(QtyNotAvailabletopick.qty)
+                FROM QtyNotAvailabletopick
+               WHERE QtyNotAvailabletopick.partid = part.id), 0) AS qtyNotAvailabletoPick
+
+FROM part
+WHERE
+      part.id != 0
+  AND part.typeid = 10
+  AND part.activeflag = 1
+
+ORDER BY part.id
