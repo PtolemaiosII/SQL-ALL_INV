@@ -1,2 +1,2 @@
-# SQL-ALL_INV
-ALL_INV view to show summarized inventory info
+# SQL-Command-Folder
+SQL-Command-Folder to store, review, update SQL Command
