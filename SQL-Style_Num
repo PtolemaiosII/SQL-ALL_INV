@@ -1,0 +1,7 @@
+SELECT
+	LEFT(PART.NUM, (position('-', PART.NUM)-1)) AS STYLE_NUM
+FROM PART
+WHERE
+	position('-', PART.NUM) > 0
+	AND
+	LEFT(PART.NUM,1) SIMILAR TO '[[:DIGIT:]]'
