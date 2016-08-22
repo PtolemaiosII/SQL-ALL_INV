@@ -16,6 +16,6 @@ tmp2(MyPivotSource) as
 tmp3(MyTableJoin) as
 (select distinct 'left outer join '||MyTableName||' on part.id = '||MyTableName||'.recordid'
  from tmp1)
-select 'select part.id as "PartID",'||list(distinct MyPivotSource)||' from part '||list(distinct MyTableJoin,' ')||' group by part.id order by 1'
+select part.id as "Part_ID",part.description as "Part_Description",part.num as "Part_Num",part.stdcost as "Part_STDCost",part.activeflag as "Part_ActiveFlag",'||list(distinct MyPivotSource)||' from part '||list(distinct MyTableJoin,' ')||' group by part.id order by 1'
 from
 rdb$database, tmp2, tmp3
