@@ -1,0 +1,21 @@
+with
+tmp1(MyFieldName, MyCustomID, MyTableName) as
+(select distinct customfield.Name,
+    customfield.ID,
+    t2.TABLEREFNAME
+ from customfield
+ inner join tablereference t1 on customfield.tableid = t1.tableid
+ inner join customfieldtype on customfield.CUSTOMFIELDTYPEID = customfieldtype.id
+ inner join tablereference t2 on customfieldtype.tableid = t2.TABLEID
+ where t1.tablerefname = 'Part'
+ and
+ customfield.activeflag = 1),
+tmp2(MyPivotSource) as
+(select 'max(iif(('||MyTableName||'.CUSTOMFIELDID = '||MyCustomID||'), '||MyTableName||'.info, NULL)) as "'||MyFieldName||'"'
+ from tmp1),
+tmp3(MyTableJoin) as
+(select distinct 'left outer join '||MyTableName||' on part.id = '||MyTableName||'.recordid'
+ from tmp1)
+select 'select part.id as "PartID",'||list(distinct MyPivotSource)||' from part '||list(distinct MyTableJoin,' ')||' group by part.id order by 1'
+from
+rdb$database, tmp2, tmp3
