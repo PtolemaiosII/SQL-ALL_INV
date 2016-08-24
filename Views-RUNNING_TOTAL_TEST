@@ -1,0 +1,11 @@
+select
+	T1.ID,
+    T1.productnum,
+    T1.soid,
+    T1.QTYTOFULFILL,
+    SUM(T2.QTYTOFULFILL) AS RUNNING
+from soitem AS T1 LEFT OUTER JOIN SOITEM AS T2 ON (T2.ID <= T1.ID AND T1.PRODUCTNUM = T2.PRODUCTNUM)
+--where T1.soid = 4
+	--AND
+	--T2.SOID = 4
+GROUP BY 1,2,3,4
