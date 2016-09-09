@@ -1,0 +1,38 @@
+        ' Loop through each shape in excel
+        For Each xlsShape In xlWorkSheet.Shapes
+            Dim xRng As Excel.Range = xlsShape.TopLeftCell
+            strImageName = CStr(xRng.Offset(0, 2).Value())
+
+            ' Store Shape properties
+            Dim shapeLeft = xlsShape.Left
+            Dim shapeTop = xlsShape.Top
+            Dim shapeWidth = xlsShape.Width
+            Dim shapeHeight = xlsShape.Height
+            xlsShape.Copy() ' Copy the shape to the Clipboard
+
+            If Clipboard.ContainsImage Then
+                Dim img = Clipboard.GetImage ' Store the image in a variable
+                Dim imgName = "test.png"
+
+                ' What kind of image needs to be saved
+                If cmbType.SelectedIndex = 2 Then
+                    imgName = imgLocation & strImageName & ".png"
+                    img.Save(imgName, ImageFormat.Png)
+                ElseIf cmbType.SelectedIndex = 1 Then
+                    imgName = imgLocation & strImageName & ".jpeg"
+                    img.Save(imgName, ImageFormat.Jpeg)
+                ElseIf cmbType.SelectedIndex = 0 Then
+                    imgName = imgLocation & strImageName & ".gif"
+                    img.Save(imgName, ImageFormat.Gif)
+                Else
+                    MessageBox.Show("Please select a file type to save as...")
+                    Exit Sub
+                End If
+
+            End If
+
+            ' Variable manipulation
+            intImgCount += 1
+            lblImgTotal.Text = intImgCount.ToString & " / " & xlWorkSheet.Shapes.Count.ToString
+
+        Next
