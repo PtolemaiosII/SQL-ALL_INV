@@ -1,0 +1,25 @@
+with
+tmp1(MyFieldName, MyCustomID, MyTableName, SortOrder) as
+(select distinct customfield.Name,
+    customfield.ID,
+    t2.TABLEREFNAME,
+    customfield.sortorder
+ from customfield
+ inner join tablereference t1 on customfield.tableid = t1.tableid
+ inner join customfieldtype on customfield.CUSTOMFIELDTYPEID = customfieldtype.id
+ inner join tablereference t2 on customfieldtype.tableid = t2.TABLEID
+ where t1.tablerefname = 'Part'
+ and
+ customfield.activeflag = 1),
+tmp2(MyPivotSource) as
+(select list(mylist)
+ from(select 'max(iif(('||MyTableName||'.CUSTOMFIELDID = '||MyCustomID||'), '||MyTableName||'.info, NULL)) as "CF-'||MyFieldName||'"' as Mylist, SortOrder
+ from tmp1
+ order by sortorder)),
+tmp3(MyTableJoin) as
+(select list(mylist2,' ')
+ from (select distinct 'left outer join '||MyTableName||' on part.id = '||MyTableName||'.recordid' as mylist2
+ from tmp1))
+select 'select PART.NUM AS "PartNumber",PART.DESCRIPTION AS "PartDescription",PART.DETAILS AS "PartDetails",UOM.CODE AS "UOM",PART.UPC AS "UPC",PARTTYPE.NAME AS "PartType",PART.ACTIVEFLAG AS "Active",PART.ABCCODE AS "ABCCode",TAXRATE.CODE AS "TaxCode",PART.WEIGHT AS "Weight",UOMW.CODE AS "WeightUOM",PART.WIDTH AS "Width",PART.HEIGHT AS "Height",PART.LEN AS "Length",UOMS.CODE AS "SizeUOM",PR_PARTTRACKING.NAME AS "PrimaryTracking",PART.ALERTNOTE AS "AlertNote",NULL AS "PictureUrl",'||MyPivotSource||' from part LEFT OUTER JOIN UOM ON PART.UOMID = UOM.ID LEFT OUTER JOIN PARTTYPE ON PART.TYPEID = PARTTYPE.ID LEFT OUTER JOIN TAXRATE ON PART.TAXID = TAXRATE.ID LEFT OUTER JOIN UOM AS UOMW ON PART.WEIGHTUOMID = UOMW.ID LEFT OUTER JOIN UOM AS UOMS ON PART.SIZEUOMID = UOMS.ID LEFT OUTER JOIN PARTTOTRACKING ON PART.ID = PARTTOTRACKING.PARTID AND PARTTOTRACKING.PRIMARYFLAG = 1 LEFT OUTER JOIN PARTTRACKING AS PR_PARTTRACKING ON PARTTOTRACKING.PARTTRACKINGID = PR_PARTTRACKING.ID '||MyTableJoin||' group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18 order by 1'
+from
+rdb$database, tmp2, tmp3
