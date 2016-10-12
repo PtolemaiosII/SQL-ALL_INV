@@ -1,4 +1,5 @@
-SELECT
+SELECT                                              /* SELECT statement MUST be in the 1st line */
+                                                    /* Columns/Attributes selected, see Fishbowl Exporting Wizard Templete */ 
 	PART.NUM AS "PartNumber",
 	PART.DESCRIPTION AS "PartDescription",
 	PART.DETAILS AS "PartDetails",
@@ -17,7 +18,8 @@ SELECT
 	PR_PARTTRACKING.NAME AS "PrimaryTracking",
 	PART.ALERTNOTE AS "AlertNote",
 	NULL AS "PictureUrl"
-FROM
+
+FROM                                                /* Tables/Entities Joins */
 	PART
 	LEFT OUTER JOIN UOM ON PART.UOMID = UOM.ID
 	LEFT OUTER JOIN PARTTYPE ON PART.TYPEID = PARTTYPE.ID
@@ -26,10 +28,16 @@ FROM
 	LEFT OUTER JOIN UOM AS UOMS ON PART.SIZEUOMID = UOMS.ID
 	LEFT OUTER JOIN PARTTOTRACKING ON PART.ID = PARTTOTRACKING.PARTID AND PARTTOTRACKING.PRIMARYFLAG = 1
 	LEFT OUTER JOIN PARTTRACKING AS PR_PARTTRACKING ON PARTTOTRACKING.PARTTRACKINGID = PR_PARTTRACKING.ID
-WHERE
-    PART.ACTIVEFLAG = 1
-    AND
-    PART.TYPEID = 10
-    AND
-    PART.UPC SIMILAR TO '[[:DIGIT:]]%'
+	JOIN COMPANY ON COMPANY.ID = 1
 	
+WHERE                                               /* Filters/Constrains/Conditions */
+    COMPANY.ID = 1
+    AND PART.ACTIVEFLAG = 1                         -- "Active Flag". This will return only active Parts. --
+    AND PART.TYPEID = 10                            -- "Part Type Filter". 10 = "Inventory". --
+    AND PART.UPC SIMILAR TO '[[:DIGIT:]]%'          -- "with UPC Info" Filter. This will return only Parts that have UPC. --
+--    AND [More Conditions]
+
+
+/* This query is for exporting Parts from Sanuk */
+/* by Zicheng */
+/* If you have anything to discuss, please send an email to Zicheng@pureandco.com */	
