@@ -1,0 +1,22 @@
+SELECT
+	PART.NUM,
+	LPAD("TB-Style Num".Info, 7, '0') AS "CF-Style Num(LPAD)",
+	"TB-Color Code".Info AS "CF-Color Code",
+	"TB-Size Code".Info AS "CF-Size Code",
+	"TB-Style Num".Info AS "CF-Style Num",
+	QTY - ALLOCATED - UNAVAILABLE + DROPSHIP AS EXTRA
+FROM
+	ALL_INV
+	INNER JOIN PART ON ALL_INV.ID = PART.ID
+	LEFT OUTER JOIN CustomSet AS "TB-Part Category" ON (PART.ID = "TB-Part Category".RECORDID AND "TB-Part Category".CUSTOMFIELDID = 36)
+	LEFT OUTER JOIN CustomVarChar AS "TB-Style Num" ON (PART.ID = "TB-Style Num".RECORDID AND "TB-Style Num".CUSTOMFIELDID = 40)
+	LEFT OUTER JOIN CustomVarChar AS "TB-Color Code" ON (PART.ID = "TB-Color Code".RECORDID AND "TB-Color Code".CUSTOMFIELDID = 38)
+	LEFT OUTER JOIN CustomVarChar AS "TB-Size Code" ON (PART.ID = "TB-Size Code".RECORDID AND "TB-Size Code".CUSTOMFIELDID = 39)
+WHERE 
+	PART.ACTIVEFLAG = 1
+	AND
+	"TB-Part Category".Info = 'Finished Product'
+	--AND
+	--"TB-Style Num".Info IS NOT NULL
+	AND
+	QTY > 0
