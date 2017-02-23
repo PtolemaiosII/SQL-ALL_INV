@@ -1,0 +1,25 @@
+
+CREATE VIEW VW_QTYONORDERBIDREQUESTPO (PARTID,LOCATIONGROUPID,QTY) AS  
+SELECT part.id
+	,po.locationgroupid
+	,COALESCE(SUM(CASE 
+				WHEN poitem.UOMID <> part.uomid
+					AND uomconversion.ID > 0
+					THEN (poitem.qtyToFulfill - poitem.qtyFulfilled) * uomconversion.MULTIPLY / uomconversion.FACTOR
+				ELSE poitem.qtyToFulfill - poitem.qtyFulfilled
+				END), 0) AS qty
+FROM Part
+INNER JOIN POItem ON part.ID = POItem.partid
+INNER JOIN PO ON po.ID = POItem.POID
+LEFT OUTER JOIN uomconversion ON (
+		uomconversion.TOUOMID = part.uomid
+		AND uomconversion.FROMUOMID = poitem.uomid
+		)
+WHERE PO.statusID = 10
+	AND POItem.typeID IN (
+		10
+		,30
+		)
+GROUP BY part.id
+	,po.locationgroupid;
+
