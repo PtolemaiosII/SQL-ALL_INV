@@ -1,5 +1,5 @@
 SELECT
-	PART.NUM,
+	PART.NUM AS PARTNUM,
 	LPAD("TB-Style Num".Info, 7, '0') AS "CF-Style Num(LPAD)",
 	"TB-Color Code".Info AS "CF-Color Code",
 	"TB-Size Code".Info AS "CF-Size Code",
