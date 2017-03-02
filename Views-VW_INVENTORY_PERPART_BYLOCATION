@@ -1,0 +1,14 @@
+
+CREATE VIEW VW_INVENTORY_PERPART_BYLOCATION (ID,QTY,QTYCOMMITTED,PARTID,LOCATIONID,TRACKINGENCODING,DATECREATED,TYPEID) AS  SELECT
+	MAX(id) AS id,
+	COALESCE(SUM(qty), 0) AS qty,
+	COALESCE(SUM(qtycommitted), 0) AS qtycommitted,
+	partID,
+	locationID,
+	trackingEncoding,
+	min(Tag.datecreated) as datecreated,
+	typeid
+FROM Tag
+GROUP BY trackingEncoding, partID, locationID, typeid
+		;
+
