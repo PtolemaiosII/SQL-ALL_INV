@@ -1,0 +1,42 @@
+CREATE OR ALTER PROCEDURE GETINTEGERLIST (AINTEGERLIST VARCHAR(32000))
+ RETURNS (ID INTEGER)
+AS declare variable IntegerList varchar(32000);
+  declare variable CommaPos integer;
+  declare variable IntegerVal varchar(10);
+begin
+  IntegerList = AIntegerList || ' ';
+  CommaPos = Position(',', IntegerList);
+
+  while (CommaPos > 0) do
+  begin
+    IntegerVal = Trim(SubString(IntegerList from 1 for CommaPos - 1));
+
+    if (Char_Length(IntegerVal) > 0) then
+    begin
+      if (IntegerVal similar to '[0-9]*') then
+      begin
+        ID = Cast(IntegerVal as integer);
+        suspend;
+      end
+    end
+
+    if (Char_Length(IntegerList) > CommaPos) then
+      IntegerList = SubString(IntegerList from CommaPos + 1);
+    else
+      IntegerList = '';
+
+    CommaPos = Position(',', IntegerList);
+  end
+
+  IntegerList = Trim(IntegerList);
+
+  if (Char_Length(IntegerList) > 0) then
+  begin
+    if (IntegerList similar to '[0-9]*') then
+    begin
+      ID = Cast(IntegerList as integer);
+      suspend;
+    end
+  end
+end
+
