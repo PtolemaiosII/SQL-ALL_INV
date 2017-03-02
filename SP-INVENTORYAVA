@@ -1,0 +1,54 @@
+CREATE OR ALTER PROCEDURE INVENTORYAVA RETURNS (PLOCATIONGROUP VARCHAR(70), PPARTNUMBER VARCHAR(80), PPARTDESCRIPTION VARCHAR(252), PLOCATION VARCHAR(70), PPICKABLE INTEGER, PUOMCODE VARCHAR(10), PQTY INTEGER, PQTYCOMMITTED INTEGER, PCOMPANY VARCHAR(80), PTRACKINGENCODING VARCHAR(255), PDATECREATED DATE, PTRACKING VARCHAR(255))
+AS BEGIN
+FOR
+SELECT
+	--? AS "Group",
+    locationgroup.name AS locationgroup,
+    part.num AS partnumber,
+    part.description AS partdescription,
+    location.name AS location,
+    location.pickable as pickable,
+    uom.code AS uomcode,
+    tag.qty AS qty,
+    tag.qtycommitted as qtycommitted,
+    company.name AS company,
+    tag.trackingencoding,
+    Tag.datecreated as datecreated,
+    LIST('<b>' || tagtrackingview.abbr || ':</b> ' || tagtrackingview.infoformatted, '<br/>') AS tracking
+
+FROM part
+    INNER JOIN (
+	SELECT MAX(id) AS id, COALESCE(SUM(qty), 0) AS qty, COALESCE(SUM(qtycommitted), 0) AS qtycommitted, partID, locationID, trackingEncoding, min(Tag.datecreated) as datecreated, typeid
+	FROM Tag
+	GROUP BY trackingEncoding, partID, locationID, typeid
+	) as tag ON part.id = tag.partid and tag.typeid > 10
+    INNER JOIN location ON tag.locationid = location.id
+    INNER JOIN locationgroup ON location.locationgroupid = locationgroup.id
+    LEFT JOIN uom ON uom.id = part.uomid
+    JOIN company ON company.id = 1
+    LEFT JOIN tagtrackingview ON tagtrackingview.tagid = tag.id AND tagTrackingView.typeID <> 40
+
+WHERE
+   location.id IN (31)
+   --(SELECT ID FROM GETINTEGERLIST(30))
+  AND part.id != 0
+
+GROUP BY locationgroup, partnumber, partdescription, location, pickable, uomcode, company, trackingencoding, qty, qtycommitted, datecreated
+
+INTO
+	:Plocationgroup,
+	:Ppartnumber,
+	:Ppartdescription,
+	:Plocation,
+	:Ppickable,
+	:Puomcode,
+	:Pqty,
+	:Pqtycommitted,
+	:Pcompany,
+	:Ptrackingencoding,
+	:Pdatecreated,
+	:Ptracking
+DO
+SUSPEND;
+END
+
