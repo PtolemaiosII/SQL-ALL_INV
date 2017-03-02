@@ -1,0 +1,36 @@
+CREATE OR ALTER PROCEDURE GETVARCHARLIST (AVARCHARLIST VARCHAR(32000))
+ RETURNS (STRING VARCHAR(100))
+AS declare variable VarcharList varchar(32000);
+  declare variable CommaPos integer;
+  declare variable VarcharVal varchar(100);
+begin
+  VarcharList = AVarcharList || ' ';
+  CommaPos = Position(',', VarcharList);
+
+  while (CommaPos > 0) do
+  begin
+    VarcharVal = Trim(SubString(VarcharList from 1 for CommaPos - 1));
+
+    if (Char_Length(VarcharVal) > 0) then
+    begin
+        STRING = Cast(VarcharVal as varchar(100));
+        suspend;
+    end
+
+    if (Char_Length(VarcharList) > CommaPos) then
+      VarcharList = SubString(VarcharList from CommaPos + 1);
+    else
+      VarcharList = '';
+
+    CommaPos = Position(',', VarcharList);
+  end
+
+  VarcharList = Trim(VarcharList);
+
+  if (Char_Length(VarcharList) > 0) then
+  begin
+      STRING = Cast(VarcharList as varchar(100));
+      suspend;
+  end
+end
+
