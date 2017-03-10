@@ -1,0 +1,195 @@
+DROP procedure if EXISTS sp_RawMaterialPlanning;
+
+delimiter #
+
+CREATE PROCEDURE sp_RawMaterialPlanning
+(
+	dateRange1 date,
+    dateRange2 date,
+    ckShowProductHasEnoughStock	CHAR(1)
+)
+
+BEGIN
+
+/*Set Default Parameter Values*/
+SET dateRange1 = IFNULL(dateRange1, '2000-01-01');
+SET dateRange2 = IFNULL(dateRange2, '2050-01-01');
+SET ckShowProductHasEnoughStock = IFNULL(ckShowProductHasEnoughStock, '1');
+
+/* Create all temporary tables*/
+DROP temporary table if exists TTB_RawMaterialPlanning_Inventory;
+CREATE TEMPORARY TABLE TTB_RawMaterialPlanning_Inventory (
+	PARTID int unsigned NOT NULL,
+	QTY decimal (28, 9),
+	UNAVAILABLE decimal (28, 9),
+	DROPSHIP decimal (28, 9),
+	QTYCOMMITTED decimal (28, 9),
+	ALLOCATED decimal (28, 9),
+	ONORDER decimal (28, 9),
+	QTYNOTAVAILABLETOPICK decimal (28, 9),
+	PRIMARY KEY (PARTID)
+);
+
+DROP temporary table if exists TTB_RawMaterialPlanning_SOItem;
+CREATE TEMPORARY TABLE TTB_RawMaterialPlanning_SOItem
+(
+	BOMITEMTYPE_NAME	VARCHAR(30) NOT NULL,
+	SUM_NEW_QTY			decimal (28, 9),
+	LOW_P_ID			int unsigned NOT NULL,
+	LOW_P_NUM			VARCHAR(70),
+	LOW_P_DESCRIPTION	VARCHAR(252),
+	LOW_P_DEFAULTBOMID	int unsigned,
+	UOM_CODE			VARCHAR(10),
+	PRIMARY KEY (BOMITEMTYPE_NAME, LOW_P_ID)
+);
+
+DROP temporary table if exists TTB_RawMaterialPlanning_TradeQTY;
+CREATE TEMPORARY TABLE TTB_RawMaterialPlanning_TradeQTY
+(
+	PART_ID				int unsigned NOT NULL,
+	PART_NUM			VARCHAR(70),
+	LOW_P_ID			int unsigned NOT NULL,
+	LOW_P_NUM			VARCHAR(70),
+	QTYONHAND			decimal (28, 9),
+	QTY					decimal (28, 9),
+	TRADEQTY			decimal (28, 9),
+	PRIMARY KEY (PART_ID, LOW_P_ID)
+);
+
+/*Load data into temporary tables*/
+INSERT INTO TTB_RawMaterialPlanning_Inventory
+SELECT
+	vw_AllInventory.ID, 
+	vw_AllInventory.QTY,
+	vw_AllInventory.UNAVAILABLE,
+	vw_AllInventory.DROPSHIP,
+	vw_AllInventory.QTYCOMMITTED,
+	vw_AllInventory.ALLOCATED,
+	vw_AllInventory.ONORDER,
+	vw_AllInventory.QTYNOTAVAILABLETOPICK
+FROM
+	vw_AllInventory;
+
+CALL sp_RecursiveBom ();
+
+INSERT INTO TTB_RawMaterialPlanning_SOItem
+SELECT
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.BOMITEMTYPE_NAME, 'Unknown') AS BOMITEMTYPE_NAME,
+	SUM((SOITEM.QTYTOFULFILL - SOITEM.QTYFULFILLED - SOITEM.QTYPICKED) * COALESCE(TTB_RawMaterialPlanning_RecursiveBom.QTY, 1)) AS SUM_NEW_QTY,
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.LOW_P_ID, PART.ID) AS LOW_P_ID,
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.LOW_P_NUM, PART.NUM) AS LOW_P_NUM,
+    COALESCE(TTB_RawMaterialPlanning_RecursiveBom.LOW_P_DESCRIPTION, PART.DESCRIPTION) AS LOW_P_DESCRIPTION,
+	TTB_RawMaterialPlanning_RecursiveBom.LOW_P_DEFAULTBOMID,
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.UOM_CODE, UOM.CODE) AS UOM_CODE
+FROM
+	SO
+	INNER JOIN SOITEM ON SO.ID = SOITEM.SOID
+	INNER JOIN PRODUCT ON SOITEM.PRODUCTID = PRODUCT.ID
+	INNER JOIN PART ON PRODUCT.PARTID = PART.ID
+	INNER JOIN UOM ON PART.UOMID = UOM.ID
+	LEFT OUTER JOIN TTB_RawMaterialPlanning_RecursiveBom ON PART.DEFAULTBOMID = TTB_RawMaterialPlanning_RecursiveBom.MOTHER_BOM
+    /*AND PART.ID = TTB_RawMaterialPlanning_RecursiveBom.LOW_P_ID*/
+WHERE
+	SO.DATEISSUED BETWEEN dateRange1 AND dateRange2
+	AND
+	SO.STATUSID BETWEEN 11 AND 25
+	AND
+	SOITEM.STATUSID < 50
+GROUP BY
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.BOMITEMTYPE_NAME, 'Unknown'),
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.LOW_P_ID, PART.ID),
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.LOW_P_NUM, PART.NUM),
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.LOW_P_DESCRIPTION, PART.DESCRIPTION),
+	TTB_RawMaterialPlanning_RecursiveBom.LOW_P_DEFAULTBOMID,
+	COALESCE(TTB_RawMaterialPlanning_RecursiveBom.UOM_CODE, UOM.CODE)
+HAVING 
+	ckShowProductHasEnoughStock = '1'
+	OR
+	SUM((SOITEM.QTYTOFULFILL - SOITEM.QTYFULFILLED - SOITEM.QTYPICKED) * COALESCE(TTB_RawMaterialPlanning_RecursiveBom.QTY, 1)) > 0;
+    
+INSERT INTO TTB_RawMaterialPlanning_TradeQTY
+SELECT
+	PART.ID AS PART_ID,
+	PART.NUM AS PART_NUM,
+	TTB_RawMaterialPlanning_RecursiveBom.LOW_P_ID,
+	TTB_RawMaterialPlanning_RecursiveBom.LOW_P_NUM,
+	TTB_RawMaterialPlanning_Inventory.QTY AS QTYONHAND,
+	TTB_RawMaterialPlanning_RecursiveBom.QTY,
+	least(TTB_RawMaterialPlanning_SOItem.SUM_NEW_QTY, (TTB_RawMaterialPlanning_Inventory.QTY+TTB_RawMaterialPlanning_Inventory.ONORDER)) * TTB_RawMaterialPlanning_RecursiveBom.QTY AS TRADEQTY
+FROM
+    TTB_RawMaterialPlanning_SOItem
+    INNER JOIN PART ON TTB_RawMaterialPlanning_SOItem.LOW_P_ID = PART.ID
+	INNER JOIN TTB_RawMaterialPlanning_RecursiveBom ON PART.DEFAULTBOMID = TTB_RawMaterialPlanning_RecursiveBom.MOTHER_BOM
+	INNER JOIN TTB_RawMaterialPlanning_Inventory ON PART.ID = TTB_RawMaterialPlanning_Inventory.PARTID
+WHERE PART.ID <> TTB_RawMaterialPlanning_RecursiveBom.LOW_P_ID;
+
+
+/*Mail Query*/
+ SELECT
+	TTB_RawMaterialPlanning_SOItem.BOMITEMTYPE_NAME,
+	TTB_RawMaterialPlanning_SOItem.LOW_P_NUM,
+    TTB_RawMaterialPlanning_SOItem.LOW_P_DESCRIPTION,
+	TTB_RawMaterialPlanning_SOItem.LOW_P_DEFAULTBOMID,
+	TTB_RawMaterialPlanning_SOItem.UOM_CODE,
+    TTB_RawMaterialPlanning_SOItem.SUM_NEW_QTY,
+    TTB_RawMaterialPlanning_Inventory.QTY,
+    TTB_RawMaterialPlanning_Inventory.ONORDER,
+    COALESCE(SUM(TTB_RawMaterialPlanning_TradeQTY.TRADEQTY),0) AS TRADEQTY,
+    CASE
+    WHEN TTB_RawMaterialPlanning_SOItem.BOMITEMTYPE_NAME LIKE 'R%' THEN TTB_RawMaterialPlanning_SOItem.SUM_NEW_QTY - SUM(TTB_RawMaterialPlanning_TradeQTY.TRADEQTY)
+    ELSE MIN(least(TTB_RawMaterialPlanning_SOItem.SUM_NEW_QTY, (TTB_RawMaterialPlanning_Inventory.ALLOCATED - TTB_RawMaterialPlanning_Inventory.QTY - TTB_RawMaterialPlanning_Inventory.ONORDER + TTB_RawMaterialPlanning_Inventory.DROPSHIP)))
+    END AS ACC_NEED,
+    (TTB_RawMaterialPlanning_Inventory.ALLOCATED - TTB_RawMaterialPlanning_Inventory.QTY - TTB_RawMaterialPlanning_Inventory.ONORDER + TTB_RawMaterialPlanning_Inventory.DROPSHIP) AS INDICATOR,
+    (TTB_RawMaterialPlanning_Inventory.QTY - TTB_RawMaterialPlanning_Inventory.QTYNOTAVAILABLETOPICK - TTB_RawMaterialPlanning_Inventory.QTYCOMMITTED) AS QTYATP,
+    PR.REORDERPOINT AS MIN_QTY,
+    PR.ORDERUPTOLEVEL AS MAX_QTY,
+    VP.LEADTIME,
+    COMPANY.NAME AS COMPANY
+FROM
+	TTB_RawMaterialPlanning_SOItem
+	INNER JOIN TTB_RawMaterialPlanning_Inventory ON TTB_RawMaterialPlanning_SOItem.LOW_P_ID = TTB_RawMaterialPlanning_Inventory.PARTID
+    LEFT OUTER JOIN TTB_RawMaterialPlanning_TradeQTY ON TTB_RawMaterialPlanning_SOItem.LOW_P_ID = TTB_RawMaterialPlanning_TradeQTY.LOW_P_ID
+    LEFT OUTER JOIN PARTREORDER AS PR ON TTB_RawMaterialPlanning_SOItem.LOW_P_ID = PR.`PARTID` AND PR.LOCATIONGROUPID = 
+    																							(
+    																							SELECT
+                                                                                                    ADDRESS.`LOCATIONGROUPID` AS ADDRESS_LOCATIONGROUPID
+                                                                                               	FROM
+                                                                                                    `ACCOUNT` ACCOUNT
+                                                                                                    INNER JOIN `ADDRESS` ADDRESS ON ACCOUNT.`ID` = ADDRESS.`ACCOUNTID`
+                                                                                                    INNER JOIN `COMPANY` COMPANY ON ACCOUNT.`ID` = COMPANY.`ACCOUNTID`
+                                                                                              	WHERE
+                                                                                                    COMPANY.ID = 1
+                                                                                              	)
+    LEFT OUTER JOIN VENDORPARTS AS VP ON (TTB_RawMaterialPlanning_SOItem.LOW_P_ID = VP.PARTID AND VP.DEFAULTFLAG = 1)
+    JOIN COMPANY ON COMPANY.ID = 1
+GROUP BY
+	TTB_RawMaterialPlanning_SOItem.BOMITEMTYPE_NAME,
+	TTB_RawMaterialPlanning_SOItem.LOW_P_NUM,
+	TTB_RawMaterialPlanning_SOItem.LOW_P_DESCRIPTION,
+	TTB_RawMaterialPlanning_SOItem.LOW_P_DEFAULTBOMID,
+	TTB_RawMaterialPlanning_SOItem.UOM_CODE,
+	TTB_RawMaterialPlanning_SOItem.SUM_NEW_QTY,
+	TTB_RawMaterialPlanning_Inventory.QTY,
+    TTB_RawMaterialPlanning_Inventory.ONORDER,
+	(TTB_RawMaterialPlanning_Inventory.ALLOCATED - TTB_RawMaterialPlanning_Inventory.QTY - TTB_RawMaterialPlanning_Inventory.ONORDER + TTB_RawMaterialPlanning_Inventory.DROPSHIP),
+	(TTB_RawMaterialPlanning_Inventory.QTY - TTB_RawMaterialPlanning_Inventory.QTYNOTAVAILABLETOPICK - TTB_RawMaterialPlanning_Inventory.QTYCOMMITTED),
+	PR.REORDERPOINT,
+	PR.ORDERUPTOLEVEL,
+	VP.LEADTIME,
+	COMPANY.NAME
+HAVING
+	ckShowProductHasEnoughStock = '1'
+	OR 
+	(
+		(CASE
+		WHEN TTB_RawMaterialPlanning_SOItem.BOMITEMTYPE_NAME LIKE 'R%' THEN TTB_RawMaterialPlanning_SOItem.SUM_NEW_QTY - SUM(TTB_RawMaterialPlanning_TradeQTY.TRADEQTY)
+		ELSE MIN(least(TTB_RawMaterialPlanning_SOItem.SUM_NEW_QTY, (TTB_RawMaterialPlanning_Inventory.ALLOCATED - TTB_RawMaterialPlanning_Inventory.QTY - TTB_RawMaterialPlanning_Inventory.ONORDER + TTB_RawMaterialPlanning_Inventory.DROPSHIP)))
+		END) > 0
+	)
+ORDER BY
+	CASE 
+		WHEN TTB_RawMaterialPlanning_SOItem.BOMITEMTYPE_NAME LIKE 'F%' THEN 1
+		WHEN TTB_RawMaterialPlanning_SOItem.BOMITEMTYPE_NAME LIKE 'U%' THEN 2
+	ELSE 3 END,
+	TTB_RawMaterialPlanning_SOItem.LOW_P_NUM;
+END #
