@@ -192,4 +192,11 @@ ORDER BY
 		WHEN TTB_RawMaterialPlanning_SOItem.BOMITEMTYPE_NAME LIKE 'U%' THEN 2
 	ELSE 3 END,
 	TTB_RawMaterialPlanning_SOItem.LOW_P_NUM;
+
+/*Drop all temporary tables*/
+DROP temporary table if exists TTB_RawMaterialPlanning_Inventory;
+DROP temporary table if exists TTB_RawMaterialPlanning_RecursiveBom;
+DROP temporary table if exists TTB_RawMaterialPlanning_SOItem;
+DROP temporary table if exists TTB_RawMaterialPlanning_TradeQTY;
+
 END #
