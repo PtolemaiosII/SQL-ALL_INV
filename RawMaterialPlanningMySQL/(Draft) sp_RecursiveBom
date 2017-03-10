@@ -1,0 +1,128 @@
+DROP procedure if EXISTS sp_RecursiveBom;
+
+delimiter #
+CREATE procedure sp_RecursiveBom ()
+
+BEGIN
+
+declare v_done tinyint unsigned default 0;
+declare v_depth smallint unsigned default 1;
+
+DROP TEMPORARY TABLE IF EXISTS TTB_RawMaterialPlanning_RecursiveBom;
+CREATE TEMPORARY TABLE TTB_RawMaterialPlanning_RecursiveBom (
+	MOTHER_BOMNUM varchar(70),
+	MOTHER_BOM int unsigned NOT NULL,
+	BOM_ID int unsigned NOT NULL,
+	BOMITEM_TYPEID int unsigned,
+    BOMITEM_sortID int unsigned,
+	BOMITEMTYPE_NAME VARCHAR(30),
+	QTY decimal(28,9),
+	LOW_P_ID int unsigned NOT NULL,
+	LOW_P_DESCRIPTION VARCHAR(256),
+	LOW_P_NUM VARCHAR(70),
+	LOW_P_DEFAULTBOMID int unsigned,
+	UOM_CODE VARCHAR(10),
+	LEVEL smallint unsigned,
+	PRIMARY KEY (MOTHER_BOM,BOM_ID,LOW_P_ID,BOMITEM_sortID)
+)engine = memory;
+
+insert into TTB_RawMaterialPlanning_RecursiveBom 
+SELECT
+	 BOM.`NUM` AS MOTHER_BOMNUM,
+	 BOM.`ID` AS MOTHER_BOM,
+     BOM.`ID` AS BOM_ID,
+     BOMITEM.`TYPEID` AS BOMITEM_TYPEID,
+     BOMITEM.`sortIdConfig` AS BOMITEM_sortID,
+     BOMITEMTYPE.`NAME` AS BOMITEMTYPE_NAME,
+     BOMITEM.QUANTITY AS QTY,
+     LOW_P.`ID` AS LOW_P_ID,
+     LOW_P.`DESCRIPTION` AS LOW_P_DESCRIPTION,
+     LOW_P.`NUM` AS LOW_P_NUM,
+     LOW_P.`DEFAULTBOMID` AS LOW_P_DEFAULTBOMID,
+     UOM.`CODE` AS UOM_CODE,
+     1 AS LEVEL
+FROM
+     (`BOM` BOM INNER JOIN `BOMITEM` BOMITEM ON BOM.`ID` = BOMITEM.`BOMID`
+     INNER JOIN `BOMITEMTYPE` BOMITEMTYPE ON BOMITEM.`TYPEID` = BOMITEMTYPE.`ID`
+     INNER JOIN `PART` LOW_P ON BOMITEM.`PARTID` = LOW_P.`ID`
+     INNER JOIN `UOM` UOM ON BOMITEM.`UOMID` = UOM.`ID`)
+WHERE
+	BOM.ACTIVEFLAG = 1
+	AND
+    LOW_P.TYPEID = 10
+    AND
+    LOW_P.`NUM` NOT LIKE 'SF%'
+    AND
+    LOW_P.`NUM` NOT LIKE 'BG%'
+    AND
+    LOW_P.`NUM` NOT LIKE 'CG%'
+    AND
+    LOW_P.`NUM` NOT LIKE 'SC%';
+
+/*select * from TTB_RawMaterialPlanning_RecursiveBom;*/
+/*select parent_cat_id, cat_id, v_depth from categories where cat_id = p_cat_id;*/
+
+/* http://dev.mysql.com/doc/refman/5.0/en/temporary-table-problems.html */
+drop temporary table if EXISTS TTB_RecursiveBom_Tmp;
+create temporary table TTB_RecursiveBom_Tmp engine=memory select * from TTB_RawMaterialPlanning_RecursiveBom;
+
+while not v_done do
+
+    if EXISTS( select 1 from bom inner join TTB_RawMaterialPlanning_RecursiveBom on bom.id = TTB_RawMaterialPlanning_RecursiveBom.LOW_P_DEFAULTBOMID and TTB_RawMaterialPlanning_RecursiveBom.LEVEL = v_depth) then
+
+        insert into TTB_RawMaterialPlanning_RecursiveBom 
+            SELECT
+				TTB_RecursiveBom_Tmp.MOTHER_BOMNUM AS MOTHER_BOMNUM,
+				TTB_RecursiveBom_Tmp.MOTHER_BOM AS MOTHER_BOM,
+				BOM.`ID` AS BOM_ID,
+				BOMITEM.`TYPEID` AS BOMITEM_TYPEID,
+				BOMITEM.`sortIdConfig` AS BOMITEM_sortID,
+				BOMITEMTYPE.`NAME` AS BOMITEMTYPE_NAME,
+				(BOMITEM.QUANTITY*TTB_RecursiveBom_Tmp.QTY) AS QTY,
+				LOW_P.`ID` AS LOW_P_ID,
+				LOW_P.`DESCRIPTION` AS LOW_P_DESCRIPTION,
+				LOW_P.`NUM` AS LOW_P_NUM,
+				LOW_P.`DEFAULTBOMID` AS LOW_P_DEFAULTBOMID,
+				UOM.`CODE` AS UOM_CODE,
+				v_depth + 1 AS LEVEL
+			from
+				`BOM` BOM INNER JOIN `BOMITEM` BOMITEM ON BOM.`ID` = BOMITEM.`BOMID`
+				INNER JOIN `BOMITEMTYPE` BOMITEMTYPE ON BOMITEM.`TYPEID` = BOMITEMTYPE.`ID`
+				INNER JOIN `PART` LOW_P ON BOMITEM.`PARTID` = LOW_P.`ID`
+				INNER JOIN `UOM` UOM ON BOMITEM.`UOMID` = UOM.`ID`
+				inner join TTB_RecursiveBom_Tmp on BOM.`ID` = TTB_RecursiveBom_Tmp.LOW_P_DEFAULTBOMID and TTB_RecursiveBom_Tmp.LEVEL = v_depth and TTB_RecursiveBom_Tmp.BOMITEM_TYPEID <> 10
+			where
+				bomitem.typeid = 20
+                AND
+				BOM.ACTIVEFLAG = 1
+				AND
+				LOW_P.TYPEID = 10
+				AND
+				LOW_P.`NUM` NOT LIKE 'SF%'
+				AND
+				LOW_P.`NUM` NOT LIKE 'BG%'
+				AND
+				LOW_P.`NUM` NOT LIKE 'CG%'
+				AND
+				LOW_P.`NUM` NOT LIKE 'SC%';
+				
+
+        set v_depth = v_depth + 1;          
+
+        truncate table TTB_RecursiveBom_Tmp;
+        insert into TTB_RecursiveBom_Tmp
+        select
+        	*
+        from
+        TTB_RawMaterialPlanning_RecursiveBom
+        where TTB_RawMaterialPlanning_RecursiveBom.level = v_depth;
+
+    else
+        set v_done = 1;
+    end if;
+
+end while;
+
+drop temporary table if EXISTS TTB_RecursiveBom_Tmp;
+
+END #
