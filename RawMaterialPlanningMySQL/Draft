@@ -1,0 +1,105 @@
+drop procedure if exists category_hier;
+
+delimiter #
+
+create procedure category_hier ()
+
+begin
+
+declare v_done tinyint unsigned default 0;
+declare v_depth smallint unsigned default 0;
+
+drop temporary table if exists hier;
+CREATE TEMPORARY TABLE hier (
+	MOTHER_BOMNUM varchar(70),
+	MOTHER_BOM int unsigned NOT NULL,
+	BOM_ID int unsigned NOT NULL,
+	BOMITEM_TYPEID int unsigned,
+    BOMITEM_sortID int unsigned,
+	BOMITEMTYPE_NAME VARCHAR(30),
+	QTY decimal(28,9),
+	LOW_P_ID int unsigned NOT NULL,
+	LOW_P_DESCRIPTION VARCHAR(256),
+	LOW_P_NUM VARCHAR(70),
+	LOW_P_DEFAULTBOMID int unsigned,
+	UOM_CODE VARCHAR(10),
+	LEVEL smallint unsigned,
+	PRIMARY KEY (MOTHER_BOM,BOM_ID,LOW_P_ID,BOMITEM_sortID)
+)engine = memory;
+
+insert into hier 
+SELECT
+	 BOM.`NUM` AS MOTHER_BOMNUM,
+	 BOM.`ID` AS MOTHER_BOM,
+     BOM.`ID` AS BOM_ID,
+     BOMITEM.`TYPEID` AS BOMITEM_TYPEID,
+     BOMITEM.`sortIdConfig` AS BOMITEM_sortID,
+     BOMITEMTYPE.`NAME` AS BOMITEMTYPE_NAME,
+     BOMITEM.QUANTITY AS QTY,
+     LOW_P.`ID` AS LOW_P_ID,
+     LOW_P.`DESCRIPTION` AS LOW_P_DESCRIPTION,
+     LOW_P.`NUM` AS LOW_P_NUM,
+     LOW_P.`DEFAULTBOMID` AS LOW_P_DEFAULTBOMID,
+     UOM.`CODE` AS UOM_CODE,
+     1 AS LEVEL
+FROM
+     (`BOM` BOM INNER JOIN `BOMITEM` BOMITEM ON BOM.`ID` = BOMITEM.`BOMID`
+     INNER JOIN `BOMITEMTYPE` BOMITEMTYPE ON BOMITEM.`TYPEID` = BOMITEMTYPE.`ID`
+     INNER JOIN `PART` LOW_P ON BOMITEM.`PARTID` = LOW_P.`ID`
+     INNER JOIN `UOM` UOM ON BOMITEM.`UOMID` = UOM.`ID`)
+WHERE
+	BOM.ACTIVEFLAG = 1
+	AND
+    LOW_P.TYPEID = 10
+    AND
+    LOW_P.`NUM` NOT LIKE 'SF%'
+    AND
+    LOW_P.`NUM` NOT LIKE 'BG%'
+    AND
+    LOW_P.`NUM` NOT LIKE 'CG%'
+    AND
+    LOW_P.`NUM` NOT LIKE 'SC%';
+
+select * from hier;
+/*select parent_cat_id, cat_id, v_depth from categories where cat_id = p_cat_id;*/
+
+/* http://dev.mysql.com/doc/refman/5.0/en/temporary-table-problems.html */
+
+create temporary table tmp engine=memory select * from hier;
+
+while not v_done do
+
+    if exists( select 1 from categories p inner join hier on p.parent_cat_id = hier.cat_id and hier.depth = v_depth) then
+
+        insert into hier 
+            select p.parent_cat_id, p.cat_id, v_depth + 1 from categories p 
+            inner join tmp on p.parent_cat_id = tmp.cat_id and tmp.depth = v_depth;
+
+        set v_depth = v_depth + 1;          
+
+        truncate table tmp;
+        insert into tmp select * from hier where depth = v_depth;
+
+    else
+        set v_done = 1;
+    end if;
+
+end while;
+
+select 
+ p.cat_id,
+ p.name as category_name,
+ b.cat_id as parent_cat_id,
+ b.name as parent_category_name,
+ hier.depth
+from 
+ hier
+inner join categories p on hier.cat_id = p.cat_id
+left outer join categories b on hier.parent_cat_id = b.cat_id
+order by
+ hier.depth, hier.cat_id;
+
+drop temporary table if exists hier;
+drop temporary table if exists tmp;
+
+end #
