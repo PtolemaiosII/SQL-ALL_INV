@@ -1,0 +1,18 @@
+CREATE DATABASE SSRSConfig;
+
+USE SSRSConfig;
+GO
+
+CREATE TABLE SSRSUser(
+	UserName	VARCHAR(50) NOT NULL PRIMARY KEY,
+	Password	VARCHAR(100),
+	IsActive	BIT
+);
+
+
+insert into SSRSUser values('admin', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1);
+insert into SSRSUser values('zicheng', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1);
+insert into SSRSUser values('staff', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@CoReport'), 2), 1);
+insert into SSRSUser values('customer', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Abcd1234'), 2), 1)
+
+grant select to ReportServer
