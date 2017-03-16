@@ -1,0 +1,26 @@
+USE [SSRSConfig]
+GO
+
+/****** Object:  StoredProcedure [dbo].[sp_PassVerify]    Script Date: 3/16/2017 7:57:54 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROC [dbo].[sp_PassVerify]
+(	
+@Name Varchar(255)
+)
+AS
+BEGIN
+SET NOCOUNT ON;
+if exists(select 1 from SSRSUser where username = @Name AND IsActive = 1)
+	select [Password] from SSRSUser where username = @Name;
+else
+	select '#THEREISNOMATCHOFTHEUSERNAME#' AS [Password];
+END
+GO
+
+
