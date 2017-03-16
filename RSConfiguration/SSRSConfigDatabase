@@ -1,4 +1,5 @@
 CREATE DATABASE SSRSConfig;
+GO
 
 USE SSRSConfig;
 GO
@@ -10,9 +11,19 @@ CREATE TABLE SSRSUser(
 );
 
 
-insert into SSRSUser values('admin', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1);
-insert into SSRSUser values('zicheng', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1);
-insert into SSRSUser values('staff', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@CoReport'), 2), 1);
-insert into SSRSUser values('customer', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Abcd1234'), 2), 1)
+insert into SSRSUser values('admin', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1)
+insert into SSRSUser values('zicheng', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1)
+insert into SSRSUser values('staff', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@CoReport'), 2), 1)
+insert into SSRSUser values('customer', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Abcd1234'), 2), 0)
 
-grant select to ReportServer
+CREATE USER [SSRSUser] FOR LOGIN [NT SERVICE\ReportServer$THAISQL]
+GO
+
+ALTER AUTHORIZATION ON SCHEMA::[db_owner] TO [SSRSUser]
+GO
+
+ALTER ROLE [db_owner] ADD MEMBER [SSRSUser]
+GO
+
+GRANT SELECT ON [dbo].[SSRSUser] TO [SSRSUser]
+GO
