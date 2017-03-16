@@ -1,0 +1,33 @@
+USE [SSRSConfig]
+GO
+
+/****** Object:  StoredProcedure [dbo].[sp_CreateNewSSRSLogin]    Script Date: 3/16/2017 7:59:00 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROC [dbo].[sp_CreateNewSSRSLogin]
+(
+	@userName	VARCHAR(100) = NULL,
+	@Password	VARCHAR(100) = NULL
+)
+AS
+BEGIN
+	SET NOCOUNT ON; 
+	IF (@userName IS NULL) OR (@Password IS NULL)
+		PRINT 'username/password cannot be empty';
+	IF EXISTS
+			(
+				SELECT 1 FROM SSRSUser WHERE UserName = @userName
+			)
+		PRINT 'username has already been registered';
+	ELSE
+		INSERT INTO SSRSUser
+		VALUES (@userName, CONVERT(NVARCHAR(128), HASHBYTES('SHA1', @Password), 2), 1);
+END;
+
+
+GO
