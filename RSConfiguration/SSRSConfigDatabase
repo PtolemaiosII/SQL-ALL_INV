@@ -11,12 +11,10 @@ CREATE TABLE SSRSUser(
 );
 
 
-insert into SSRSUser values('admin', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1)
-insert into SSRSUser values('zicheng', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@Co123'), 2), 1)
-insert into SSRSUser values('staff', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Pure@CoReport'), 2), 1)
-insert into SSRSUser values('customer', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', 'Abcd1234'), 2), 0)
+insert into SSRSUser values('admin', CONVERT(NVARCHAR(128),HASHBYTES('SHA1', <PASSWORD>), 2), 1)
 
-CREATE USER [SSRSUser] FOR LOGIN [NT SERVICE\ReportServer$THAISQL]
+
+CREATE USER [SSRSUser] FOR LOGIN <SSRS SERVICE ACCOUNT>
 GO
 
 ALTER AUTHORIZATION ON SCHEMA::[db_owner] TO [SSRSUser]
