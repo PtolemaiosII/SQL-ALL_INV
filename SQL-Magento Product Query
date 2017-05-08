@@ -1,0 +1,72 @@
+SELECT first 1000
+	PRODUCT.NUM AS "sku",
+	'' AS "store_view_code",
+	'Default' AS "attribute_set_code",
+	'simple' AS "product_type",
+	"TB-Brand".info || '/' || "TB-Season".info || '/' || "TB-Story".info AS "categories",
+	'US' AS "product_websites",
+	PRODUCT.DESCRIPTION AS "name",
+	PRODUCT.DETAILS AS "description",
+	PRODUCT.DESCRIPTION AS "short_description",
+	PRODUCT.WEIGHT AS "weight", /*WEIGHT UOM NEED TO BE CONFIRMED BY ASIF*/
+	1 AS "product_online",
+	'Taxable Goods' AS "tax_class_name",
+	'Catalog, Search' AS "visibility",
+	'' AS "price", /*ADVANCED PRICING NEED TO BE CONFIRMED BY ASIF*/
+	'Retailer,General' AS customer_group,
+	'' AS "special_price",
+	'' AS "special_price_from_date",
+	'' AS "special_price_to_date",
+	LOWER(PRODUCT.NUM) AS "url_key",
+	PRODUCT.DESCRIPTION AS "meta_title",
+	PRODUCT.DESCRIPTION AS "meta_keywords",
+	PRODUCT.DETAILS AS "meta_description",
+	'' AS "base_image",
+	'base_'||PRODUCT.NUM AS "base_image_label",
+	'' AS "small_image",
+	'small_'||PRODUCT.NUM AS "small_image_label",
+	'' AS "thumbnail_image",
+	'thumbnail_'||PRODUCT.NUM AS "thumbnail_image_label",
+	'' AS "swatch_image",
+	'swatch_'||PRODUCT.NUM AS "swatch_image_label",
+	'' AS "create_at",
+	'' AS "updated_at",
+	'' AS "new_from_date",
+	'' AS "new_to_date",
+	'Block after Info Column' AS "display_product_options_in",
+	'' AS "map_price",
+	'' AS "msrp_price",
+	'' AS "map_enabled",
+	'' AS "gift_message_available",
+	'' AS "custom_design",
+	'' AS "custom_design_from",
+	'' AS "custom_design_to",
+	'' AS "custom_layout_update",
+	'' AS "page_layout",
+	'' AS "product_options_container",
+	'' AS "msrp_display_actual_price_type",
+	'China' AS "country_of_manufacture",/*"TB-Country of Manufacture".INFO AS "country_of_manufacture"*/
+	'' AS "additional_attributes",/*FOR MASTER PRODUCT DROPDOWN MENU*/
+	
+FROM
+	PRODUCT
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "US MSRP" ON (PRODUCT.ID = "US MSRP".RECORDID AND "US MSRP".CUSTOMFIELDID = 317)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "US Wholesale/Free Shipping" ON (PRODUCT.ID = "US Wholesale/Free Shipping".RECORDID AND "US Wholesale/Free Shipping".CUSTOMFIELDID = 336)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "US Wholesale/Shipping Collect" ON (PRODUCT.ID = "US Wholesale/Shipping Collect".RECORDID AND "US Wholesale/Shipping Collect".CUSTOMFIELDID = 318)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "CA MSRP" ON (PRODUCT.ID = "CA MSRP".RECORDID AND "CA MSRP".CUSTOMFIELDID = 315)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "CA Wholesale/Free Shipping" ON (PRODUCT.ID = "CA Wholesale/Free Shipping".RECORDID AND "CA Wholesale/Free Shipping".CUSTOMFIELDID = 337)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "CA Wholesale/Shipping Collect" ON (PRODUCT.ID = "CA Wholesale/Shipping Collect".RECORDID AND "CA Wholesale/Shipping Collect".CUSTOMFIELDID = 58)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "CA/US FOB" ON (PRODUCT.ID = "CA/US FOB".RECORDID AND "CA/US FOB".CUSTOMFIELDID = 320)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "EU MSRP" ON (PRODUCT.ID = "EU MSRP".RECORDID AND "EU MSRP".CUSTOMFIELDID = 323)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "EU Small Distributor" ON (PRODUCT.ID = "EU Small Distributor".RECORDID AND "EU Small Distributor".CUSTOMFIELDID = 316)
+	LEFT OUTER JOIN CUSTOMDECIMAL AS "EU Large Distributor" ON (PRODUCT.ID = "EU Large Distributor".RECORDID AND "EU Large Distributor".CUSTOMFIELDID = 319)
+	LEFT OUTER JOIN CustomSet AS "TB-Country of Manufacture" ON (PRODUCT.ID = "TB-Country of Manufacture".RECORDID AND "TB-Country of Manufacture".CUSTOMFIELDID = 390)
+	INNER JOIN PART ON PRODUCT.PARTID = PART.ID
+	LEFT OUTER JOIN CustomVarChar AS "TB-Style" ON (PART.ID = "TB-Style".RECORDID AND "TB-Style".CUSTOMFIELDID = 42)
+	LEFT OUTER JOIN CustomSet AS "TB-Brand" ON (PART.ID = "TB-Brand".RECORDID AND "TB-Brand".CUSTOMFIELDID = 24)
+	LEFT OUTER JOIN CustomSet AS "TB-Season" ON (PART.ID = "TB-Season".RECORDID AND "TB-Season".CUSTOMFIELDID = 34)
+	LEFT OUTER JOIN CustomVarCharLong AS "TB-Story" ON (PART.ID = "TB-Story".RECORDID AND "TB-Story".CUSTOMFIELDID = 16)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Story Number" ON (PART.ID = "TB-Story Number".RECORDID AND "TB-Story Number".CUSTOMFIELDID = 17)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Story Sort Number" ON (PART.ID = "TB-Story Sort Number".RECORDID AND "TB-Story Sort Number".CUSTOMFIELDID = 75)
+WHERE
+	"TB-Brand".info = 'Style Me Up!'
