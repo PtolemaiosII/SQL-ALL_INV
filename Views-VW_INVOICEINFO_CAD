@@ -1,0 +1,45 @@
+
+CREATE VIEW VW_INVOICEINFO_CAD (COMPANYID,COMPANYNAME,COMPANYCITY,COMPANYADDRESSLINE,COMPANYZIP,COMPANYCOUNTRY,COMPANYSTATE,COMPANYTEL,COMPANYEMAIL,BANKNAME,BANKCITY,BANKADDRESSLINE,BANKZIP,BANKCOUNTRY,BANKSTATE,BANKTEL,BANKEMAIL,ACCOUNTNAME,ACCOUNTNUM,ACHROUTING,SWIFT,CODE,TRANSIT) AS      
+select
+	COMPANY.ID AS COMPANYID,
+	COMPANYADDRESS.name AS COMPANYNAME,
+	COMPANYADDRESS.city AS COMPANYCITY,
+	COMPANYADDRESS.address AS COMPANYADDRESSLINE,
+	COMPANYADDRESS.ZIP AS COMPANYZIP,
+	COMPANYCOUNTRY.name AS COMPANYCOUNTRY,
+	COMPANYSTATE.CODE AS COMPANYSTATE,
+	COMPANYWORK.DATUS AS COMPANYTEL,
+	COMPANYEMAIL.DATUS AS COMPANYEMAIL,
+	BANKADDRESS.name AS BANKNAME,
+	BANKADDRESS.city AS BANKCITY,
+	BANKADDRESS.address AS BANKADDRESSLINE,
+	BANKADDRESS.ZIP AS BANKZIP,
+	BANKCOUNTRY.name AS BANKCOUNTRY,
+	BANKSTATE.CODE AS BANKSTATE,
+	BANKWORK.DATUS AS BANKTEL,
+	BANKEMAIL.DATUS AS BANKEMAIL,
+	AccountName.Info AS AccountName,
+	AccountNum.Info AS AccountNum,
+	ACHRouting.Info AS ACHRouting,
+	SWIFT.Info AS SWIFT,
+	Code.Info AS Code,
+	Transit.Info AS Transit
+from 
+	company
+	inner join address AS COMPANYADDRESS on company.accountid = COMPANYADDRESS.accountid and COMPANYADDRESS.id = 31
+	left join stateconst AS COMPANYSTATE on COMPANYADDRESS.stateid = COMPANYSTATE.id
+	left join countryconst AS COMPANYCOUNTRY on COMPANYADDRESS.COUNTRYID = COMPANYCOUNTRY.id
+	left join CONTACT AS COMPANYWORK on COMPANYADDRESS.id = COMPANYWORK.addressid and COMPANYWORK.typeID = 20
+	left join CONTACT AS COMPANYEMAIL on COMPANYADDRESS.id = COMPANYEMAIL.addressid and COMPANYEMAIL.typeID = 60
+	inner join address AS BANKADDRESS on company.accountid = BANKADDRESS.accountid and BANKADDRESS.id = 412
+	left join stateconst AS BANKSTATE on BANKADDRESS.stateid = BANKSTATE.id
+	left join countryconst AS BANKCOUNTRY on BANKADDRESS.COUNTRYID = BANKCOUNTRY.id
+	left join CONTACT AS BANKWORK on BANKADDRESS.id = BANKWORK.addressid and BANKWORK.typeID = 20
+	left join CONTACT AS BANKEMAIL on BANKADDRESS.id = BANKEMAIL.addressid and BANKEMAIL.typeID = 60
+	left join customvarchar AS AccountName on company.id = AccountName.recordid and AccountName.customfieldid = 357
+	left join customvarchar AS AccountNum on company.id = AccountNum.recordid and AccountNum.customfieldid = 358
+	left join customvarchar AS ACHRouting on company.id = ACHRouting.recordid and ACHRouting.customfieldid = 0
+	left join customvarchar AS SWIFT on company.id = SWIFT.recordid and SWIFT.customfieldid = 361
+	left join customvarchar AS Code on company.id = Code.recordid and Code.customfieldid = 360
+	left join customvarchar AS Transit on company.id = Transit.recordid and Transit.customfieldid = 359;
+
