@@ -1,0 +1,49 @@
+SELECT
+	PART.NUM AS "PartNumber",
+	"TB-Volume MasterCTN/pc".Info AS "CF-Volume MasterCTN/pc",
+	"TB-N.W. InnerCTN/pc".Info AS "CF-N.W. InnerCTN/pc",
+	"TB-G.W. InnterCTN/pc".Info AS "CF-G.W. InnterCTN/pc",
+	"TB-N.W. MasterCTN/pc".Info AS "CF-N.W. MasterCTN/pc",
+	"TB-G.W. MasterCTN/pc".Info AS "CF-G.W. MasterCTN/pc",
+	"TB-Units in Innerbox".Info AS "CF-Units in Innerbox",
+	"TB-Units in Outerbox".Info AS "CF-Units in Outerbox",
+	"TB-2017 OuterPack Confirmed by Supplier".Info AS "CF-2017 OuterPack Confirmed by Supplier",
+	"TB-Innerbox Length".Info AS "CF-Innerbox Length",
+	"TB-Innerbox Height".Info AS "CF-Innerbox Height",
+	"TB-Innerbox Width".Info AS "CF-Innerbox Width",
+	"TB-Volume InnerCTN".Info AS "CF-Volume InnerCTN",
+	"TB-N.W. InnerCTN".Info AS "CF-N.W. InnerCTN",
+	"TB-G.W. InnerCTN".Info AS "CF-G.W. InnerCTN",
+	"TB-Outerbox Length".Info AS "CF-Outerbox Length",
+	"TB-Outerbox Height".Info AS "CF-Outerbox Height",
+	"TB-Outerbox Width".Info AS "CF-Outerbox Width",
+	"TB-Volume MasterCTN".Info AS "CF-Volume MasterCTN",
+	"TB-N.W. MasterCTN".Info AS "CF-N.W. MasterCTN",
+	"TB-G.W. MasterCTN".Info AS "CF-G.W. MasterCTN"
+FROM
+  
+	PART
+	LEFT OUTER JOIN CustomDecimal AS "TB-Volume MasterCTN/pc" ON (PART.ID = "TB-Volume MasterCTN/pc".RECORDID AND "TB-Volume MasterCTN/pc".CUSTOMFIELDID = 352)
+	LEFT OUTER JOIN CustomDecimal AS "TB-N.W. InnerCTN/pc" ON (PART.ID = "TB-N.W. InnerCTN/pc".RECORDID AND "TB-N.W. InnerCTN/pc".CUSTOMFIELDID = 407)
+	LEFT OUTER JOIN CustomDecimal AS "TB-G.W. InnterCTN/pc" ON (PART.ID = "TB-G.W. InnterCTN/pc".RECORDID AND "TB-G.W. InnterCTN/pc".CUSTOMFIELDID = 408)
+	LEFT OUTER JOIN CustomDecimal AS "TB-N.W. MasterCTN/pc" ON (PART.ID = "TB-N.W. MasterCTN/pc".RECORDID AND "TB-N.W. MasterCTN/pc".CUSTOMFIELDID = 355)
+	LEFT OUTER JOIN CustomDecimal AS "TB-G.W. MasterCTN/pc" ON (PART.ID = "TB-G.W. MasterCTN/pc".RECORDID AND "TB-G.W. MasterCTN/pc".CUSTOMFIELDID = 356)
+	LEFT OUTER JOIN CustomInteger AS "TB-Units in Innerbox" ON (PART.ID = "TB-Units in Innerbox".RECORDID AND "TB-Units in Innerbox".CUSTOMFIELDID = 334)
+	LEFT OUTER JOIN CustomInteger AS "TB-Units in Outerbox" ON (PART.ID = "TB-Units in Outerbox".RECORDID AND "TB-Units in Outerbox".CUSTOMFIELDID = 335)
+	LEFT OUTER JOIN CustomInteger AS "TB-2017 OuterPack Confirmed by Supplier" ON (PART.ID = "TB-2017 OuterPack Confirmed by Supplier".RECORDID AND "TB-2017 OuterPack Confirmed by Supplier".CUSTOMFIELDID = 405)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Innerbox Length" ON (PART.ID = "TB-Innerbox Length".RECORDID AND "TB-Innerbox Length".CUSTOMFIELDID = 338)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Innerbox Height" ON (PART.ID = "TB-Innerbox Height".RECORDID AND "TB-Innerbox Height".CUSTOMFIELDID = 339)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Innerbox Width" ON (PART.ID = "TB-Innerbox Width".RECORDID AND "TB-Innerbox Width".CUSTOMFIELDID = 340)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Volume InnerCTN" ON (PART.ID = "TB-Volume InnerCTN".RECORDID AND "TB-Volume InnerCTN".CUSTOMFIELDID = 419)
+	LEFT OUTER JOIN CustomDecimal AS "TB-N.W. InnerCTN" ON (PART.ID = "TB-N.W. InnerCTN".RECORDID AND "TB-N.W. InnerCTN".CUSTOMFIELDID = 412)
+	LEFT OUTER JOIN CustomDecimal AS "TB-G.W. InnerCTN" ON (PART.ID = "TB-G.W. InnerCTN".RECORDID AND "TB-G.W. InnerCTN".CUSTOMFIELDID = 413)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Length" ON (PART.ID = "TB-Outerbox Length".RECORDID AND "TB-Outerbox Length".CUSTOMFIELDID = 341)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Height" ON (PART.ID = "TB-Outerbox Height".RECORDID AND "TB-Outerbox Height".CUSTOMFIELDID = 342)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Width" ON (PART.ID = "TB-Outerbox Width".RECORDID AND "TB-Outerbox Width".CUSTOMFIELDID = 343)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Volume MasterCTN" ON (PART.ID = "TB-Volume MasterCTN".RECORDID AND "TB-Volume MasterCTN".CUSTOMFIELDID = 420)
+	LEFT OUTER JOIN CustomDecimal AS "TB-N.W. MasterCTN" ON (PART.ID = "TB-N.W. MasterCTN".RECORDID AND "TB-N.W. MasterCTN".CUSTOMFIELDID = 414)
+	LEFT OUTER JOIN CustomDecimal AS "TB-G.W. MasterCTN" ON (PART.ID = "TB-G.W. MasterCTN".RECORDID AND "TB-G.W. MasterCTN".CUSTOMFIELDID = 415)
+WHERE PART.ACTIVEFLAG = 1
+	and part.num in ('SMU-551','SMU-552','SMU-554','SMU-556','SMU-562','SMU-563','SMU-564','SMU-565','SMU-601','SMU-605','SMU-606','SMU-620','SMU-621','SMU-624','SMU-625','SMU-626','SMU-628'
+)
+ORDER BY "PartNumber"
