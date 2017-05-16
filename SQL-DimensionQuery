@@ -1,0 +1,22 @@
+SELECT
+	SO.NUM,
+	PRODUCT.NUM,
+	SOITEM.QTYTOFULFILL,
+	"TB-Volume MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "CF-Volume MasterCTN",
+	"TB-N.W. MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "CF-N.W. MasterCTN",
+	"TB-G.W. MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "CF-G.W. MasterCTN",
+	"TB-Units in Innerbox".Info||'/'||"TB-Units in Outerbox".Info AS "CasePack"
+FROM
+	SO
+	INNER JOIN SOITEM ON SO.ID = SOITEM.SOID
+	INNER JOIN PRODUCT ON SOITEM.PRODUCTID = PRODUCT.ID
+	INNER JOIN PART ON PRODUCT.PARTID = PART.ID
+	LEFT OUTER JOIN CustomDecimal AS "TB-Volume MasterCTN/pc" ON (PART.ID = "TB-Volume MasterCTN/pc".RECORDID AND "TB-Volume MasterCTN/pc".CUSTOMFIELDID = 352)
+	LEFT OUTER JOIN CustomDecimal AS "TB-N.W. MasterCTN/pc" ON (PART.ID = "TB-N.W. MasterCTN/pc".RECORDID AND "TB-N.W. MasterCTN/pc".CUSTOMFIELDID = 355)
+	LEFT OUTER JOIN CustomDecimal AS "TB-G.W. MasterCTN/pc" ON (PART.ID = "TB-G.W. MasterCTN/pc".RECORDID AND "TB-G.W. MasterCTN/pc".CUSTOMFIELDID = 356)
+	LEFT OUTER JOIN CustomInteger AS "TB-Units in Innerbox" ON (PART.ID = "TB-Units in Innerbox".RECORDID AND "TB-Units in Innerbox".CUSTOMFIELDID = 334)
+	LEFT OUTER JOIN CustomInteger AS "TB-Units in Outerbox" ON (PART.ID = "TB-Units in Outerbox".RECORDID AND "TB-Units in Outerbox".CUSTOMFIELDID = 335)
+WHERE
+	SO.NUM LIKE '201700124'
+ORDER BY
+	SOITEM.SOLINEITEM
