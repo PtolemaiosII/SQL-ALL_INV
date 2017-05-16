@@ -1,34 +1,39 @@
-SELECT first 1000
+SELECT
 	PRODUCT.NUM AS "sku",
 	'' AS "store_view_code",
 	'Default' AS "attribute_set_code",
 	'simple' AS "product_type",
-	"TB-Brand".info || '/' || "TB-Season".info || '/' || "TB-Story".info AS "categories",
-	'US' AS "product_websites",
+	/* categories */
+	"TB-Brand".info || ',' ||
+	"TB-Brand".info || '/Collections/' || ',' ||
+	"TB-Brand".info || '/Collections/' || "TB-Season".info || ',' ||
+	"TB-Brand".info || '/Collections/' || "TB-Season".info || '/' || "TB-Story".info AS "categories",
+	
+	'base,canada,usa,uk' AS "product_websites",
 	PRODUCT.DESCRIPTION AS "name",
-	PRODUCT.DETAILS AS "description",
-	PRODUCT.DESCRIPTION AS "short_description",
+	'<p>'|| REPLACE(PRODUCT.DETAILS, '"','')||'</p>' AS "description",
+	'<ul>'||ASCII_CHAR(13)||ASCII_CHAR(10)||'<li>'||REPLACE(REPLACE(PART.DETAILS, '"',''), ''||ASCII_CHAR(10)||'', '</li>'||ASCII_CHAR(13)||ASCII_CHAR(10)||'<li>')||'</li>'||ASCII_CHAR(13)||ASCII_CHAR(10)||'</ul>' AS "short_description",
 	PRODUCT.WEIGHT AS "weight", /*WEIGHT UOM NEED TO BE CONFIRMED BY ASIF*/
 	1 AS "product_online",
 	'Taxable Goods' AS "tax_class_name",
 	'Catalog, Search' AS "visibility",
-	'' AS "price", /*ADVANCED PRICING NEED TO BE CONFIRMED BY ASIF*/
+	'' AS "price", /*IN ADVANCED PRICING, CONFIRMED BY ASIf*/
 	'Retailer,General' AS customer_group,
 	'' AS "special_price",
 	'' AS "special_price_from_date",
 	'' AS "special_price_to_date",
-	LOWER(PRODUCT.NUM) AS "url_key",
+	LOWER(PRODUCT.DESCRIPTION) AS "url_key",
 	PRODUCT.DESCRIPTION AS "meta_title",
 	PRODUCT.DESCRIPTION AS "meta_keywords",
 	PRODUCT.DETAILS AS "meta_description",
 	'' AS "base_image",
-	'base_'||PRODUCT.NUM AS "base_image_label",
+	'base_'|| PRODUCT.NUM AS "base_image_label",
 	'' AS "small_image",
-	'small_'||PRODUCT.NUM AS "small_image_label",
+	'small_'|| PRODUCT.NUM AS "small_image_label",
 	'' AS "thumbnail_image",
-	'thumbnail_'||PRODUCT.NUM AS "thumbnail_image_label",
+	'thumbnail_' || PRODUCT.NUM AS "thumbnail_image_label",
 	'' AS "swatch_image",
-	'swatch_'||PRODUCT.NUM AS "swatch_image_label",
+	'swatch_' || PRODUCT.NUM AS "swatch_image_label",
 	'' AS "create_at",
 	'' AS "updated_at",
 	'' AS "new_from_date",
@@ -47,7 +52,48 @@ SELECT first 1000
 	'' AS "msrp_display_actual_price_type",
 	'China' AS "country_of_manufacture",/*"TB-Country of Manufacture".INFO AS "country_of_manufacture"*/
 	'' AS "additional_attributes",/*FOR MASTER PRODUCT DROPDOWN MENU*/
-	
+	'' AS "qty",/*IN ADVANCED PRICING, CONFIRMED BY ASIF*/
+	0 AS "out_of_stock_qty",
+	1 AS "use_config_min_qty",
+	0 AS "is_qty_decimal",
+	0 AS "allow_backorders",
+	1 AS "use_config_backorders",
+	1 AS "min_cart_qty",
+	1 AS "use_config_min_sale_qty",
+	1000 AS "max_cart_qty",
+	1 AS "use_config_max_sale_qty",
+	1 AS "is_in_stock",
+	1 AS "notify_on_stock_below",
+	1 AS "use_config_notify_stock_qty",
+	1 AS "manage_stock",
+	1 AS "use_config_manage_stock",
+	1 AS "use_config_qty_increments",
+	1 AS "qty_increments",
+	1 AS "use_config_enable_qty_inc",
+	0 AS "enable_qty_increments",
+	0 AS "is_decimal_divided",
+	0 AS "website_id",
+	1 AS "deferred_stock_update",
+	1 AS "use_config_deferred_stock_update",
+	'' AS "related_skus",
+	'' AS "related_position",
+	'' AS "crosssell_skus",
+	'' AS "crosssell_position",
+	'' AS "upsell_skus",
+	'' AS "upsell_position",
+	'' AS "additional_images",
+	'' AS "additional_image_labels",
+	'' AS "hide_from_product_page",
+	'' AS "bundle_price_type",
+	'' AS "bundle_sku_type",
+	'' AS "bundle_price_view",
+	'' AS "bundle_weight_type",
+	'' AS "bundle_values",
+	'' AS "bundle_shipment_type",
+	'' AS "configurable_variations",/*FOR MASTER PRODUCT DROPDOWN MENU*/
+	'' AS "configurable_variation_labels",
+	'' AS "associated_skus",
+	CAST(PRODUCT.LEN AS DECIMAL(10,2)) || 'x' || CAST(PRODUCT.HEIGHT AS DECIMAL(10,2)) || 'x' || CAST(PRODUCT.WIDTH AS DECIMAL(10,2)) || 'cm' AS "attribute_dimension"
 FROM
 	PRODUCT
 	LEFT OUTER JOIN CUSTOMDECIMAL AS "US MSRP" ON (PRODUCT.ID = "US MSRP".RECORDID AND "US MSRP".CUSTOMFIELDID = 317)
@@ -70,3 +116,7 @@ FROM
 	LEFT OUTER JOIN CustomDecimal AS "TB-Story Sort Number" ON (PART.ID = "TB-Story Sort Number".RECORDID AND "TB-Story Sort Number".CUSTOMFIELDID = 75)
 WHERE
 	"TB-Brand".info = 'Style Me Up!'
+	--AND "TB-Story".INFO = 'Splash of Color'
+	AND PRODUCT.ACTIVEFLAG = 1
+	AND PART.ACTIVEFLAG = 1
+	--AND PRODUCT.ID BETWEEN 17 AND 21
