@@ -2,10 +2,14 @@ SELECT
 	SO.NUM,
 	PRODUCT.NUM,
 	SOITEM.QTYTOFULFILL,
-	"TB-Volume MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "CF-Volume MasterCTN",
-	"TB-N.W. MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "CF-N.W. MasterCTN",
-	"TB-G.W. MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "CF-G.W. MasterCTN",
-	"TB-Units in Innerbox".Info||'/'||"TB-Units in Outerbox".Info AS "CasePack"
+	SOITEM.QTYTOFULFILL/"TB-Units in Outerbox".INFO AS "CTNs",
+	"TB-Volume MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "Volume",
+	"TB-N.W. MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "N.W.",
+	"TB-G.W. MasterCTN/pc".Info*SOITEM.QTYTOFULFILL AS "G.W.",
+	"TB-Units in Innerbox".Info||'/'||"TB-Units in Outerbox".Info AS "CasePack",
+	CAST("TB-Outerbox Length".INFO AS DECIMAL(10,1)) || 'x' || CAST("TB-Outerbox Height".INFO AS DECIMAL(10,1)) || 'x' || CAST("TB-Outerbox Width".INFO AS DECIMAL(10,1)) || 'cm' AS "dimension",
+	"TB-N.W. MasterCTN".INFO AS "N.W. (MasterCTN)",
+	"TB-G.W. MasterCTN".INFO AS "G.W. (MasterCTN)"
 FROM
 	SO
 	INNER JOIN SOITEM ON SO.ID = SOITEM.SOID
@@ -16,6 +20,13 @@ FROM
 	LEFT OUTER JOIN CustomDecimal AS "TB-G.W. MasterCTN/pc" ON (PART.ID = "TB-G.W. MasterCTN/pc".RECORDID AND "TB-G.W. MasterCTN/pc".CUSTOMFIELDID = 356)
 	LEFT OUTER JOIN CustomInteger AS "TB-Units in Innerbox" ON (PART.ID = "TB-Units in Innerbox".RECORDID AND "TB-Units in Innerbox".CUSTOMFIELDID = 334)
 	LEFT OUTER JOIN CustomInteger AS "TB-Units in Outerbox" ON (PART.ID = "TB-Units in Outerbox".RECORDID AND "TB-Units in Outerbox".CUSTOMFIELDID = 335)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Length" ON (PART.ID = "TB-Outerbox Length".RECORDID AND "TB-Outerbox Length".CUSTOMFIELDID = 341)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Height" ON (PART.ID = "TB-Outerbox Height".RECORDID AND "TB-Outerbox Height".CUSTOMFIELDID = 342)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Width" ON (PART.ID = "TB-Outerbox Width".RECORDID AND "TB-Outerbox Width".CUSTOMFIELDID = 343)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Volume MasterCTN" ON (PART.ID = "TB-Volume MasterCTN".RECORDID AND "TB-Volume MasterCTN".CUSTOMFIELDID = 420)
+	LEFT OUTER JOIN CustomDecimal AS "TB-N.W. MasterCTN" ON (PART.ID = "TB-N.W. MasterCTN".RECORDID AND "TB-N.W. MasterCTN".CUSTOMFIELDID = 414)
+	LEFT OUTER JOIN CustomDecimal AS "TB-G.W. MasterCTN" ON (PART.ID = "TB-G.W. MasterCTN".RECORDID AND "TB-G.W. MasterCTN".CUSTOMFIELDID = 415)
+
 WHERE
 	SO.NUM LIKE '201700124'
 ORDER BY
