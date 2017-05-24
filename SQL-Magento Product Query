@@ -18,7 +18,6 @@ SELECT
 	'Taxable Goods' AS "tax_class_name",
 	'Catalog, Search' AS "visibility",
 	'' AS "price", /*IN ADVANCED PRICING, CONFIRMED BY ASIf*/
-	'Retailer,General' AS "customer_group",
 	'' AS "special_price",
 	'' AS "special_price_from_date",
 	'' AS "special_price_to_date",
@@ -93,7 +92,10 @@ SELECT
 	'' AS "configurable_variations",/*FOR MASTER PRODUCT DROPDOWN MENU*/
 	'' AS "configurable_variation_labels",
 	'' AS "associated_skus",
-	CAST(PRODUCT.LEN AS DECIMAL(10,2)) || 'x' || CAST(PRODUCT.HEIGHT AS DECIMAL(10,2)) || 'x' || CAST(PRODUCT.WIDTH AS DECIMAL(10,2)) || 'cm' AS "attribute_dimension"
+	CAST(PRODUCT.LEN AS DECIMAL(10,2)) || 'x' || CAST(PRODUCT.HEIGHT AS DECIMAL(10,2)) || 'x' || CAST(PRODUCT.WIDTH AS DECIMAL(10,2)) || 'cm' AS "attribute_product_dimension",
+	CAST("TB-Units in Innerbox".Info ||'/'|| "TB-Units in Outerbox".Info AS VARCHAR(20)) AS "attribute_casepack",
+	CAST("TB-Innerbox Length".INFO AS DECIMAL(10,2)) || 'x' || CAST("TB-Innerbox Height".INFO AS DECIMAL(10,2)) || 'x' || CAST("TB-Innerbox Width".INFO AS DECIMAL(10,2)) || 'cm' AS "attribute_innerbox_dimension",
+	CAST("TB-Outerbox Length".INFO AS DECIMAL(10,2)) || 'x' || CAST("TB-Outerbox Height".INFO AS DECIMAL(10,2)) || 'x' || CAST("TB-Outerbox Width".INFO AS DECIMAL(10,2)) || 'cm' AS "attribute_outerbox_dimension"
 FROM
 	PRODUCT
 	LEFT OUTER JOIN CUSTOMDECIMAL AS "US MSRP" ON (PRODUCT.ID = "US MSRP".RECORDID AND "US MSRP".CUSTOMFIELDID = 317)
@@ -114,6 +116,14 @@ FROM
 	LEFT OUTER JOIN CustomVarCharLong AS "TB-Story" ON (PART.ID = "TB-Story".RECORDID AND "TB-Story".CUSTOMFIELDID = 16)
 	LEFT OUTER JOIN CustomDecimal AS "TB-Story Number" ON (PART.ID = "TB-Story Number".RECORDID AND "TB-Story Number".CUSTOMFIELDID = 17)
 	LEFT OUTER JOIN CustomDecimal AS "TB-Story Sort Number" ON (PART.ID = "TB-Story Sort Number".RECORDID AND "TB-Story Sort Number".CUSTOMFIELDID = 75)
+	LEFT OUTER JOIN CustomInteger AS "TB-Units in Innerbox" ON (PART.ID = "TB-Units in Innerbox".RECORDID AND "TB-Units in Innerbox".CUSTOMFIELDID = 334)
+	LEFT OUTER JOIN CustomInteger AS "TB-Units in Outerbox" ON (PART.ID = "TB-Units in Outerbox".RECORDID AND "TB-Units in Outerbox".CUSTOMFIELDID = 335)
+	LEFT OUTER JOIN CustomDecimal AS "TB-Innerbox Length" ON (PART.ID = "TB-Innerbox Length".RECORDID AND "TB-Innerbox Length".CUSTOMFIELDID = 338)
+    	LEFT OUTER JOIN CustomDecimal AS "TB-Innerbox Height" ON (PART.ID = "TB-Innerbox Height".RECORDID AND "TB-Innerbox Height".CUSTOMFIELDID = 339)
+    	LEFT OUTER JOIN CustomDecimal AS "TB-Innerbox Width" ON (PART.ID = "TB-Innerbox Width".RECORDID AND "TB-Innerbox Width".CUSTOMFIELDID = 340)
+    	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Length" ON (PART.ID = "TB-Outerbox Length".RECORDID AND "TB-Outerbox Length".CUSTOMFIELDID = 341)
+    	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Height" ON (PART.ID = "TB-Outerbox Height".RECORDID AND "TB-Outerbox Height".CUSTOMFIELDID = 342)
+    	LEFT OUTER JOIN CustomDecimal AS "TB-Outerbox Width" ON (PART.ID = "TB-Outerbox Width".RECORDID AND "TB-Outerbox Width".CUSTOMFIELDID = 343)
 WHERE
 	"TB-Brand".info = 'Style Me Up!'
 	--AND "TB-Story".INFO = 'Splash of Color'
