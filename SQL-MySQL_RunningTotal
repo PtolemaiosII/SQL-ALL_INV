@@ -1,0 +1,45 @@
+SELECT
+   q1.DATEFIRSTSHIP,
+   q1.ID,
+   q1.POID,
+   q1.PARTID,
+   q1.CUSTOMERID,
+   q1.REVISION,
+   q1.c,
+   @runtot:= if((@PARTID = q1.PARTID AND @CUSTOMERID= q1.CUSTOMERID AND @REVISION = q1.REVISION), @runtot,0) + q1.c AS rt,
+   @PARTID:= q1.PARTID,
+   @CUSTOMERID:= q1.CUSTOMERID,
+   @REVISION:= q1.REVISION
+FROM
+   (
+   	SELECT
+      	po.DATEFIRSTSHIP,
+       	poitem.ID,
+		poitem.POID,
+		poitem.PARTID,
+		COALESCE(POITEM.CUSTOMERID,393) as CUSTOMERID,
+		poitem.revlevel as revision,
+		sum(POITEM.QTYTOFULFILL - POITEM.QTYFULFILLED) AS c
+    FROM
+    	PO
+		INNER JOIN POITEM ON PO.ID = POITEM.POID
+	WHERE
+		POITEM.STATUSID < 31
+		AND	POITEM.TYPEID = 10
+		AND	POITEM.CUSTOMERID <> 393
+		AND	POITEM.CUSTOMERID IS NOT NULL
+    GROUP BY
+    	po.DATEFIRSTSHIP,
+       	poitem.ID,
+		poitem.POID,
+		poitem.PARTID,
+		COALESCE(POITEM.CUSTOMERID,393),
+		poitem.revlevel
+    ORDER BY 
+    	poitem.PARTID,
+		COALESCE(POITEM.CUSTOMERID,393),
+		poitem.revlevel,
+       	poitem.ID,
+		poitem.POID,
+		po.DATEFIRSTSHIP
+	)AS q1 CROSS JOIN (select @PARTID:=0, @CUSTOMERID:=0,@REVISION:='', @runtot:=0) as n
