@@ -1,0 +1,80 @@
+DROP EVENT IF EXISTS `magento_shipment_poster`;
+
+DELIMITER $$
+
+CREATE 
+	EVENT `magento_shipment_poster` 
+	ON SCHEDULE EVERY 1 WEEK STARTS '2017-06-21 15:46:00'
+    COMMENT 'Export new shipment to Magento.'
+	DO BEGIN
+	
+		-- check if exists any new magento shipment in the past 48 hours
+	    if exists
+				(
+                SELECT
+					SUBSTRING(SHIP.NUM, 2, CHAR_LENGTH(SHIP.NUM)) AS SONUM,
+					SHIPCARTON.cartonNum,
+					SHIPCARTON.trackingNum
+				FROM
+					SHIP
+					INNER JOIN SHIPCARTON ON SHIPCARTON.shipId = SHIP.ID
+                    LEFT OUTER JOIN custominteger AS `posted` ON SHIP.ID = `posted`.recordId AND `posted`.customFieldId = 407
+				WHERE
+					SHIP.locationGroupId = 8
+					AND SHIP.STATUSID = 30
+					AND SHIP.dateShipped BETWEEN DATE_ADD(NOW(), INTERVAL -48 HOUR) AND NOW()
+                    AND `posted`.info is null
+                )
+		then
+			-- K:/export/
+			-- export a .csv file containing all new shipments into the ftp server: \\192.168.10.27\Wooky (K:)
+			SET @DINTERVAL = '-48 HOUR';
+            SET @DFILENAME = concat('ShipCartonTracking', ' ', replace(now(),':','-'), '.csv');
+            SET @DFOLDER = concat('C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/');
+            SET @DPATH = concat(@DFOLDER,@DFILENAME);
+            SET @DSQL = concat(
+			'(SELECT ','\'SONUM\',''\CARTONNUM\',''TRACKINGNUM\')',
+            ' UNION 
+			(
+			SELECT
+				SUBSTRING(SHIP.NUM, 2, CHAR_LENGTH(SHIP.NUM)) AS SONUM,
+				SHIPCARTON.cartonNum,
+				SHIPCARTON.trackingNum
+			FROM
+				SHIP
+				INNER JOIN SHIPCARTON ON SHIPCARTON.shipId = SHIP.ID
+                LEFT OUTER JOIN custominteger AS `posted` ON SHIP.ID = `posted`.recordId AND `posted`.customFieldId = 407
+			WHERE
+				SHIP.locationGroupId = 8
+				AND SHIP.STATUSID = 30
+				AND SHIP.dateShipped BETWEEN DATE_ADD(NOW(), INTERVAL ', @DINTERVAL,') AND NOW()
+                AND `posted`.info is null
+			INTO OUTFILE ','\'',@DPATH, '\'',
+            ' FIELDS TERMINATED BY ','\'',',','\'',' OPTIONALLY ENCLOSED BY ','\'','"','\'',' LINES TERMINATED BY ','\'','\\n','\'',');'
+			);
+			PREPARE Dstatement FROM @DSQL;
+			EXECUTE Dstatement;
+            DEALLOCATE PREPARE Dstatement;
+		
+			-- put a check custom field `Posted to Magento` for posted shipment
+            INSERT INTO custominteger
+			SELECT
+				null AS ID,
+				407 AS customfieldid,
+                1 AS info,
+                SHIP.ID as recordid
+            FROM
+				SHIP
+				INNER JOIN SHIPCARTON ON SHIPCARTON.shipId = SHIP.ID
+                LEFT OUTER JOIN custominteger AS `posted` ON SHIP.ID = `posted`.recordId AND `posted`.customFieldId = 407
+			WHERE
+				SHIP.locationGroupId = 8
+				AND SHIP.STATUSID = 30
+				AND SHIP.dateShipped BETWEEN DATE_ADD(NOW(), INTERVAL -48 HOUR) AND NOW()
+                AND `posted`.info is null
+                ;
+		end if;
+	    
+	END $$
+
+DELIMITER ;
