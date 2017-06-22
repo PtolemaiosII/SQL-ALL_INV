@@ -1,0 +1,52 @@
+DROP EVENT IF EXISTS `magento_openpick_poster`;
+
+DELIMITER $$
+
+CREATE 
+	EVENT `magento_openpick_poster` 
+	ON SCHEDULE EVERY 3 HOUR STARTS '2017-06-22 08:30:00'
+    COMMENT 'Export open pick from Magento for Fishbowl to consume.'
+	DO BEGIN
+	
+		-- check if exists any open open pick for Magento in the past 48 hours
+	    if exists
+				(
+                SELECT
+					pick.num as picknum
+				FROM
+					pick
+				WHERE
+					pick.locationGroupId = 8
+					AND pick.STATUSID < 40
+					AND pick.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL -48 HOUR) AND NOW()
+                )
+		then
+			-- //192.168.10.27/Wooky/magento/export/pick/
+			-- export a .csv file containing all open pick into the ftp server: \\192.168.10.27\Wooky\magento\pick\ (K:)
+			SET @DINTERVAL = '-48 HOUR';
+            SET @DFILENAME = concat('Pick', '-', date_format(now(),'%Y-%m-%d-%H-%i-%s'), '.csv');
+            SET @DFOLDER = concat('//192.168.10.27/Wooky/magento/pick/');
+            SET @DPATH = concat(@DFOLDER,@DFILENAME);
+            SET @DSQL = concat(
+			'(SELECT ','\'PickNum\')',
+            ' UNION 
+			(
+				SELECT
+					pick.num as picknum
+				FROM
+					pick
+				WHERE
+					pick.locationGroupId = 8
+					AND pick.STATUSID < 40
+					AND pick.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL ', @DINTERVAL,') AND NOW()
+			INTO OUTFILE ','\'',@DPATH, '\'',
+            ' FIELDS TERMINATED BY ','\'',',','\'',' OPTIONALLY ENCLOSED BY ','\'','"','\'',' LINES TERMINATED BY ','\'','\\n','\'',');'
+			);
+			PREPARE Dstatement FROM @DSQL;
+			EXECUTE Dstatement;
+            DEALLOCATE PREPARE Dstatement;
+		end if;
+	    
+	END $$
+
+DELIMITER ;
