@@ -26,11 +26,11 @@ CREATE
                     AND `posted`.info is null
                 )
 		then
-			-- //192.168.10.27/Wooky/export/
-			-- export a .csv file containing all new shipments into the ftp server: \\192.168.10.27\Wooky (K:)
+			-- //192.168.10.27/Wooky/magento/export/
+			-- export a .csv file containing all new shipments into the ftp server: \\192.168.10.27\Wooky\magento (K:)
 			SET @DINTERVAL = '-48 HOUR';
-            SET @DFILENAME = concat('ShipCartonTracking', ' ', replace(now(),':','.'), '.csv');
-            SET @DFOLDER = concat('//192.168.10.27/Wooky/export/');
+            SET @DFILENAME = concat('ShipCartonTracking', '_', date_format(now(),'%Y-%m-%d_%H.%i.%s'), '.csv');
+            SET @DFOLDER = concat('//192.168.10.27/Wooky/magento/export/');
             SET @DPATH = concat(@DFOLDER,@DFILENAME);
             SET @DSQL = concat(
 			'(SELECT ','\'SONUM\',''\CARTONNUM\',''TRACKINGNUM\')',
