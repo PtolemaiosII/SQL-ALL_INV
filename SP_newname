@@ -1,0 +1,122 @@
+DELIMITER $$
+
+drop procedure if exists sp_part_with_tracks_cfs$$
+create procedure sp_part_with_tracks_cfs (out dsql text)
+begin
+
+/* Increase the limit of group_concat_max_len */
+set group_concat_max_len = 4294967295;
+
+/* Create all temporary tables */
+DROP temporary table if exists tmp_field_tr;
+CREATE TEMPORARY TABLE tmp_field_tr (
+	mytrackingid			int unsigned NOT NULL,
+	mytrackingname			varchar(41),
+	mytrtablename			varchar(20),
+	trackingsortorder		int unsigned
+);
+
+DROP temporary table if exists tmp_field_cf;
+CREATE TEMPORARY TABLE tmp_field_cf
+(
+	myfieldname				varchar(41),
+	mycustomid				int unsigned not null,
+	mycftablename			varchar(30),
+	cfsortorder				int unsigned
+);
+
+DROP temporary table if exists tmp_pivot_tr;
+CREATE TEMPORARY TABLE tmp_pivot_tr
+(
+	trackingpivot			text
+);
+
+DROP temporary table if exists tmp_pivot_cf;
+CREATE TEMPORARY TABLE tmp_pivot_cf
+(
+	customfieldpivot		text
+);
+
+DROP temporary table if exists tmp_table_tr;
+CREATE TEMPORARY TABLE tmp_table_tr
+(
+	trackingtablejoin		text
+);
+
+DROP temporary table if exists tmp_table_cf;
+CREATE TEMPORARY TABLE tmp_table_cf
+(
+	customfieldtablejoin	text
+);
+
+/*Load data into temporary tables */
+insert into tmp_field_tr
+select
+		parttracking.ID,
+		parttracking.NAME,
+		'parttotracking',
+		parttracking.SORTORDER
+from
+	PARTTRACKING
+order by
+	parttracking.SORTORDER;
+
+insert into tmp_field_cf
+select distinct
+		customfield.Name,
+		customfield.ID,
+		t2.TABLEREFNAME,
+		customfield.sortorder
+from
+	customfield
+	inner join tablereference t1 on customfield.tableid = t1.tableid
+	inner join customfieldtype on customfield.CUSTOMFIELDTYPEID = customfieldtype.id
+	inner join tablereference t2 on customfieldtype.tableid = t2.TABLEID
+where
+	t1.tablerefname = 'Part'
+	and customfield.activeflag = 1
+order by
+	sortorder;
+   
+insert into tmp_pivot_tr
+select group_concat(',','\n','\t',my_pivot_tr.trackinglist separator '')
+from(select concat('if(`TB-',tmp_field_tr.mytrackingname,'`.ID is not null, ''true'', ''false'') AS `Track-',tmp_field_tr.MyTrackingName,'`') as trackinglist, TrackingSortOrder
+from tmp_field_tr
+order by TrackingSortOrder) as my_pivot_tr;
+
+insert into tmp_pivot_cf
+select group_concat(',','\n','\t',my_pivot_cf.mylist_cf separator '')
+from(select concat('`TB-',tmp_field_cf.myfieldname,'`.Info as `CF-',tmp_field_cf.myfieldname,'`') as mylist_cf, cfsortorder
+from tmp_field_cf
+order by CFSortOrder) as my_pivot_cf;
+
+insert into tmp_table_tr
+select group_concat('\n','\t',my_table_tr.mylist_tr_join separator '')
+from (select concat('left outer join ',tmp_field_tr.MyTRTableName,' as `TB-',tmp_field_tr.MyTrackingName,'` on (part.id = `TB-',tmp_field_tr.MyTrackingName,'`.partid and `TB-',tmp_field_tr.MyTrackingName,'`.parttrackingid = ',tmp_field_tr.MyTrackingID,')') as mylist_tr_join
+from tmp_field_tr) as my_table_tr;
+
+insert into tmp_table_cf
+select group_concat('\n','\t',my_table_cf.mylist_cf_join separator '')
+from (select concat('left outer join ',tmp_field_cf.MyCFTableName,' as `TB-',tmp_field_cf.MyFieldName,'` on (part.id = `TB-',tmp_field_cf.MyFieldName,'`.recordid and `TB-',tmp_field_cf.MyFieldName,'`.customfieldid = ',tmp_field_cf.MyCustomID,')') as mylist_cf_join
+from tmp_field_cf) as my_table_cf;
+
+set dsql =
+(
+select
+	concat('SELECT','\n','\t','PART.NUM AS `PartNumber`,','\n','\t','PART.DESCRIPTION AS `PartDescription`,','\n','\t','PART.DETAILS AS `PartDetails`,','\n','\t','UOM.CODE AS `UOM`,','\n','\t','PART.UPC AS `UPC`,','\n','\t','PARTTYPE.NAME AS `PartType`,','\n','\t','PART.ACTIVEFLAG AS `Active`,','\n','\t','PART.ABCCODE AS `ABCCode`,','\n','\t','TAXRATE.CODE AS `TaxCode`,','\n','\t','PART.WEIGHT AS `Weight`,','\n','\t','UOMW.CODE AS `WeightUOM`,','\n','\t','PART.WIDTH AS `Width`,','\n','\t','PART.HEIGHT AS `Height`,','\n','\t','PART.LEN AS `Length`,','\n','\t','UOMS.CODE AS `SizeUOM`,','\n','\t','PR_PARTTRACKING.NAME AS `PrimaryTracking`,','\n','\t','PART.ALERTNOTE AS `AlertNote`,','\n','\t','NULL AS `PictureUrl`',COALESCE(TrackingPivot,''),COALESCE(CustomFieldPivot,''),'\n','FROM','\n','\t','PART','\n','\t','LEFT OUTER JOIN UOM ON PART.UOMID = UOM.ID','\n','\t','LEFT OUTER JOIN PARTTYPE ON PART.TYPEID = PARTTYPE.ID','\n','\t','LEFT OUTER JOIN TAXRATE ON PART.TAXID = TAXRATE.ID','\n','\t','LEFT OUTER JOIN UOM AS UOMW ON PART.WEIGHTUOMID = UOMW.ID','\n','\t','LEFT OUTER JOIN UOM AS UOMS ON PART.SIZEUOMID = UOMS.ID','\n','\t','LEFT OUTER JOIN PARTTOTRACKING ON PART.ID = PARTTOTRACKING.PARTID AND PARTTOTRACKING.PRIMARYFLAG = 1','\n','\t','LEFT OUTER JOIN PARTTRACKING AS PR_PARTTRACKING ON PARTTOTRACKING.PARTTRACKINGID = PR_PARTTRACKING.ID',COALESCE(TrackingTableJoin,''),COALESCE(CustomFieldTableJoin,''),'\n','WHERE PART.ACTIVEFLAG = 1','\n','ORDER BY `PartNumber`')
+from
+TMP_PIVOT_CF, TMP_PIVOT_TR, TMP_TABLE_CF, TMP_TABLE_TR
+);
+
+/* Set group_concat_max_len back to default */
+set group_concat_max_len = 1024;
+
+/* Drop all temporary tables */
+DROP temporary table if exists tmp_field_tr;
+DROP temporary table if exists tmp_field_cf;
+DROP temporary table if exists tmp_pivot_tr;
+DROP temporary table if exists tmp_pivot_cf;
+DROP temporary table if exists tmp_table_tr;
+DROP temporary table if exists tmp_table_cf;
+
+end$$
