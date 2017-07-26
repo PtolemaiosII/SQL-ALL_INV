@@ -7,16 +7,113 @@ CREATE
 	ON SCHEDULE EVERY 3 HOUR STARTS '2017-06-22 08:30:00'
     COMMENT 'Export open pick from Magento for Fishbowl to consume.'
 	DO BEGIN
-	
-		-- check if exists any open open pick for Magento in the past 48 hours
-	    if exists
+		-- check if the time is in posting window(8AM - 15PM) and if exists any short open pick for Magento in the past 48 hours
+		if
+			time(current_timestamp) between time('08:00:00') and time('15:00:00')
+            and exists
+				(
+				SELECT
+					pick.num as picknum
+				FROM
+					pick
+				WHERE
+					pick.locationGroupId IN (9, 10)
+					AND pick.STATUSID < 40
+					AND pick.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL -48 HOUR) AND NOW()
+					AND NOT EXISTS
+									(
+									SELECT
+										pick2.num AS picknum2
+									FROM
+										pick as pick2
+										INNER JOIN pickitem ON pick2.ID = pickitem.pickId
+									WHERE
+										pick2.locationGroupId IN (9, 10)
+										AND pick2.STATUSID < 40
+										AND pick2.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL -48 HOUR) AND NOW()
+										AND pickitem.statusid BETWEEN 5 AND 6
+										AND pick.num = pick2.num
+									)
+				)
+		then
+			-- //192.168.10.27/Wooky/magento/export/pick/
+			-- export a .csv file containing all GOOD open pick into the ftp server: \\192.168.10.27\Wooky\magento\pick\ (K:)
+			SET @DINTERVAL = '-48 HOUR';
+            SET @DFILENAME_Good = concat('Pick', '-', date_format(now(),'%Y-%m-%d-%H-%i-%s'), '.csv');
+            -- SET @DFILENAME_Bad = concat('Pick_Short', '-', date_format(now(),'%Y-%m-%d-%H-%i-%s'), '.csv');
+            SET @DFOLDER = '//192.168.10.27/Wooky/magento/pick/';
+            SET @DPATH_Good = concat(@DFOLDER,@DFILENAME_Good);
+            -- SET @DPATH_Bad = concat(@DFOLDER,@DFILENAME_Bad);
+            SET @DSQL_Good = concat(
+            '(SELECT ','\'PickNum\')',
+            ' UNION 
+            (
+				SELECT
+					pick.num as picknum
+				FROM
+					pick
+				WHERE
+					pick.locationGroupId IN (9, 10)
+					AND pick.STATUSID < 40
+					AND pick.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL ', @DINTERVAL,') AND NOW()
+					AND NOT EXISTS
+									(
+									SELECT	DISTINCT
+										pick2.num AS picknum2
+									FROM
+										pick as pick2
+										INNER JOIN pickitem ON pick2.ID = pickitem.pickId
+									WHERE
+										pick2.locationGroupId IN (9, 10)
+										AND pick2.STATUSID < 40
+										AND pick2.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL ', @DINTERVAL,') AND NOW()
+										AND pickitem.statusid = 5
+										AND pick.num = pick2.num
+									)
+			INTO OUTFILE ','\'',@DPATH_Good, '\'',
+            ' FIELDS TERMINATED BY ','\'',',','\'',' OPTIONALLY ENCLOSED BY ','\'','"','\'',' LINES TERMINATED BY ','\'','\\n','\'',');'
+            );
+            /*
+            -- //192.168.10.27/Wooky/magento/export/pick/
+			-- export a .csv file containing all BAD open pick into the ftp server: \\192.168.10.27\Wooky\magento\pick\ (K:)
+            SET @DSQL_Bad = concat(
+            '(SELECT ','\'BAD_Pick\')',
+            ' UNION 
+            (
+				SELECT
+					concat(''BAD_Pick: \', pick2.num) as BAD_Pick
+				FROM
+					pick as pick2
+					INNER JOIN pickitem ON pick2.ID = pickitem.pickId
+				WHERE
+					pick2.locationGroupId IN (9, 10)
+					AND pick2.STATUSID < 40
+					AND pick2.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL ', @DINTERVAL,') AND NOW()
+					AND pickitem.statusid = 5
+			INTO OUTFILE ','\'',@DPATH_Bad, '\'',
+            ' FIELDS TERMINATED BY ','\'',',','\'',' OPTIONALLY ENCLOSED BY ','\'','"','\'',' LINES TERMINATED BY ','\'','\\n','\'',');'
+            );
+            */
+			PREPARE Dstatement_Good FROM @DSQL_Good;
+			EXECUTE Dstatement_Good;
+            DEALLOCATE PREPARE Dstatement_Good;
+            /*
+			PREPARE Dstatement_Bad FROM @DSQL_Bad;
+			EXECUTE Dstatement_Bad;
+            DEALLOCATE PREPARE Dstatement_Bad;
+            */
+            /*
+		-- check if the time is in posting window(8AM - 15PM) and if exists any normal open pick for Magento in the past 48 hours
+	    else if
+			time(current_timestamp) between time('08:00:00') and time('15:00:00')
+			and exists
 				(
                 SELECT
 					pick.num as picknum
 				FROM
 					pick
 				WHERE
-					pick.locationGroupId = 8
+					pick.locationGroupId IN (9, 10)
 					AND pick.STATUSID < 40
 					AND pick.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL -48 HOUR) AND NOW()
                 )
@@ -25,7 +122,7 @@ CREATE
 			-- export a .csv file containing all open pick into the ftp server: \\192.168.10.27\Wooky\magento\pick\ (K:)
 			SET @DINTERVAL = '-48 HOUR';
             SET @DFILENAME = concat('Pick', '-', date_format(now(),'%Y-%m-%d-%H-%i-%s'), '.csv');
-            SET @DFOLDER = concat('//192.168.10.27/Wooky/magento/pick/');
+            SET @DFOLDER = '//192.168.10.27/Wooky/magento/pick/';
             SET @DPATH = concat(@DFOLDER,@DFILENAME);
             SET @DSQL = concat(
 			'(SELECT ','\'PickNum\')',
@@ -36,7 +133,7 @@ CREATE
 				FROM
 					pick
 				WHERE
-					pick.locationGroupId = 8
+					pick.locationGroupId IN (9,10)
 					AND pick.STATUSID < 40
 					AND pick.dateLastModified BETWEEN DATE_ADD(NOW(), INTERVAL ', @DINTERVAL,') AND NOW()
 			INTO OUTFILE ','\'',@DPATH, '\'',
@@ -46,6 +143,8 @@ CREATE
 			EXECUTE Dstatement;
             DEALLOCATE PREPARE Dstatement;
 		end if;
+        */
+	end if;
 	    
 	END $$
 
