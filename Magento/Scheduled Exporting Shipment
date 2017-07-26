@@ -20,7 +20,7 @@ CREATE
 					INNER JOIN SHIPCARTON ON SHIPCARTON.shipId = SHIP.ID
                     LEFT OUTER JOIN custominteger AS `posted` ON SHIP.ID = `posted`.recordId AND `posted`.customFieldId = 407
 				WHERE
-					SHIP.locationGroupId = 8
+					SHIP.locationGroupId IN (9, 10)
 					AND SHIP.STATUSID = 30
 					AND SHIP.dateShipped BETWEEN DATE_ADD(NOW(), INTERVAL -48 HOUR) AND NOW()
                     AND `posted`.info is null
@@ -45,7 +45,7 @@ CREATE
 				INNER JOIN SHIPCARTON ON SHIPCARTON.shipId = SHIP.ID
                 LEFT OUTER JOIN custominteger AS `posted` ON SHIP.ID = `posted`.recordId AND `posted`.customFieldId = 407
 			WHERE
-				SHIP.locationGroupId = 8
+				SHIP.locationGroupId IN (9, 10)
 				AND SHIP.STATUSID = 30
 				AND SHIP.dateShipped BETWEEN DATE_ADD(NOW(), INTERVAL ', @DINTERVAL,') AND NOW()
                 AND `posted`.info is null
