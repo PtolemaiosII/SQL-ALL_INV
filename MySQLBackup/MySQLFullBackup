@@ -10,7 +10,7 @@ REM ----------------------------------------------------------
 echo Starting Backup of Mysql Database on server...
 
 set filedate=%DATE:~10,4%-%DATE:~4,2%-%DATE:~7,2%
-set filetime=%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%
+if "%TIME:~0,1%" == " " (set filetime=0%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%) else (set filetime=%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%)
 set filename=Magento_%filedate%_%filetime%.sql
 set backupfldr=X:\Magento Backup\Database
 set loginpath=mysqldumpMagentoLive
@@ -33,7 +33,7 @@ del "%Temp%\%filename%"
 echo delete old backup...
 
 
-forfiles /p %backupfldr% /s /m *.cab /d -3 /c "cmd /c del @file : date >= 5days"
+forfiles /p %backupfldr% /s /m *.cab /d -5 /c "cmd /c del @path"
 
 
 echo Backup Complete! Have A Nice Day
