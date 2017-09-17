@@ -10,7 +10,7 @@ REM ----------------------------------------------------------
 echo Starting Backup of Mysql Database on server...
 
 set filedate=%DATE:~10,4%-%DATE:~4,2%-%DATE:~7,2%
-if "%TIME:~0,1%" == " " (set filetime=0%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%) else (set filetime=%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%)
+if "%TIME:~0,1%" == " " (set filetime=0%TIME:~1,1%-%TIME:~3,2%-%TIME:~6,2%) else (set filetime=%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%)
 set filename=Magento_%filedate%_%filetime%.sql
 set backupfldr=X:\Magento Backup\Database
 set loginpath=mysqldumpMagentoLive
