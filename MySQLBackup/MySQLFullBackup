@@ -2,7 +2,7 @@
 
 REM ----------------------------------------------------------
 REM A simple MySQL database backup script.
-REM version 2, updated September 11, 2017.
+REM version 3, updated September 21, 2017.
 REM By Zicheng Wang
 REM ----------------------------------------------------------
 REM ----------------------------------------------------------
@@ -11,7 +11,9 @@ echo Starting Backup of Mysql Database on server...
 
 set filedate=%DATE:~10,4%-%DATE:~4,2%-%DATE:~7,2%
 if "%TIME:~0,1%" == " " (set filetime=0%TIME:~1,1%-%TIME:~3,2%-%TIME:~6,2%) else (set filetime=%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%)
-set filename=Magento_%filedate%_%filetime%.sql
+set fullbackup_filename=Magento_%filedate%_%filetime%_Full
+set diffbackup_filename=Magento_%filedate%_%filetime%_Diff-Pre
+set binlogname=TransMagentoBinlog
 set backupfldr=X:\Magento Backup\Database
 set loginpath=mysqldumpMagentoLive
 set database=stylemeup_live
@@ -19,21 +21,28 @@ set database=stylemeup_live
 echo Backing up to file: %filename%
 REM Export database into file
 
-mysqldump --login-path=%loginpath% --flush-logs --master-data=2 --single-transaction --routines --events %database% > "%Temp%\%filename%"
+mysqldump --login-path=%loginpath% --flush-logs --master-data=2 --single-transaction --routines --events %database% > "%Temp%\%fullbackup_filename%.sql"
 
 
 REM Compress DB dump file into CAB file (use "EXPAND file.cab" to decompress).
-MAKECAB "%Temp%\%filename%" "%backupfldr%\%filename%.cab"
+MAKECAB "%Temp%\%fullbackup_filename%.sql" "%backupfldr%\%fullbackup_filename%.cab"
 
 
 REM Delete uncompressed DB dump file.
-del "%Temp%\%filename%"
+del "%Temp%\%fullbackup_filename%.sql"
+
+echo Compress binlog backup
+
+7z a -t7z "%backupfldr%\%diffbackup_filename%.7z" "%backupfldr%\%binlogname%.*"
+
+echo delete uncompressed binlog backup
+
+del "%backupfldr%\%binlogname%.*"
+
+echo delete old backup
 
 
-echo delete old backup...
-
-
-forfiles /p %backupfldr% /s /m *.cab /d -5 /c "cmd /c del @path"
+forfiles /p "%backupfldr%" /s /m Magento_*.* /d -5 /c "cmd /c del @path"
 
 
 echo Backup Complete! Have A Nice Day
