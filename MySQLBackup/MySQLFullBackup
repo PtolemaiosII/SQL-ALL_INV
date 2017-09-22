@@ -2,7 +2,7 @@
 
 REM ----------------------------------------------------------
 REM A simple MySQL database backup script.
-REM version 3, updated September 21, 2017.
+REM version 4, updated September 23, 2017.
 REM By Zicheng Wang
 REM ----------------------------------------------------------
 REM ----------------------------------------------------------
@@ -11,12 +11,13 @@ echo Starting Backup of Mysql Database on server...
 
 set filedate=%DATE:~10,4%-%DATE:~4,2%-%DATE:~7,2%
 if "%TIME:~0,1%" == " " (set filetime=0%TIME:~1,1%-%TIME:~3,2%-%TIME:~6,2%) else (set filetime=%TIME:~0,2%-%TIME:~3,2%-%TIME:~6,2%)
-set fullbackup_filename=Magento_%filedate%_%filetime%_Full
-set diffbackup_filename=Magento_%filedate%_%filetime%_Diff-Pre
-set binlogname=TransMagentoBinlog
-set backupfldr=X:\Magento Backup\Database
-set loginpath=mysqldumpMagentoLive
-set database=stylemeup_live
+set target=FBNarak
+set fullbackup_filename=%target%_%filedate%_%filetime%_Full
+set diffbackup_filename=%target%_%filedate%_%filetime%_Diff-Pre
+set binlogname=TransFBLIVE17-NARAK-Binlog
+set backupfldr=Z:\FB\narak-database
+set loginpath=mysqldumpNarakLive
+set database=narak
 
 echo Backing up to file: %filename%
 REM Export database into file
@@ -42,7 +43,7 @@ del "%backupfldr%\%binlogname%.*"
 echo delete old backup
 
 
-forfiles /p "%backupfldr%" /s /m Magento_*.* /d -5 /c "cmd /c del @path"
+forfiles /p "%backupfldr%" /s /m %target%_*.* /d -5 /c "cmd /c del @path"
 
 
 echo Backup Complete! Have A Nice Day
